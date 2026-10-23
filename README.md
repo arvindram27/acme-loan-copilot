@@ -52,6 +52,7 @@ Two Windows gotchas baked into the config:
 | 0 | Foundation: infra, migrations, adapters, contracts | **done** |
 | 1 | Conversation + persona | **done** |
 | 2 | Entity memory + supersession (`002_entity.sql`, live demo: corrected income resolves, stale excluded) | **done** |
+| 3 | Knowledge base + hybrid retrieval (`003_kb.sql`, 12-doc corpus, RRF over keyword+vector, cited answers) + guarded LLM extraction | **done** |
 | 2 | Entity memory + supersession | — |
 | 3 | Knowledge base + hybrid retrieval | — |
 | 4 | Toolbox + tool log | — |
