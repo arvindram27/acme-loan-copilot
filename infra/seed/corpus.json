@@ -1,0 +1,53 @@
+{
+  "version": "2026.1",
+  "docs": [
+    {
+      "title": "Acme Underwriting Guide — LTV Limits",
+      "text": "Acme Home Loans sets loan-to-value limits by property type and occupancy.\n\nFor one-unit owner-occupied purchases, the maximum LTV is 95 percent, with private mortgage insurance required above 80 percent. For a two-unit owner-occupied property, the maximum LTV is 85 percent.\n\nFor investment properties the limits are lower: the maximum LTV is 80 percent on a one-unit investment property. For a two-unit or larger investment property, the maximum LTV is 75 percent. When an appraisal comes in below the purchase price, LTV is calculated on the lesser of the two values.\n\nRefinances use the same limits, with an additional three percentage-point reduction for cash-out on investment properties."
+    },
+    {
+      "title": "Acme Underwriting Guide — Credit Score Minimums",
+      "text": "The minimum representative FICO for conventional conforming loans at Acme is 620. Borrowers below 620 cannot be manually underwritten and must be declined or referred to the non-prime shelf.\n\nPricing treats FICO bands of 620-639, 640-659, 660-679, 680-699, 700-759 and 760 plus. A FICO under 640 carries a two-notch pricing adjustment on the loan level.\n\nCo-borrower scoring: when two or more borrowers are on the loan, the representative score is the middle score of the lowest-qualified borrower, not the average of all borrowers."
+    },
+    {
+      "title": "Acme Underwriting Guide — Debt-to-Income",
+      "text": "Acme's maximum debt-to-income ratio for conventional loans is 45 percent. The limit rises to 50 percent when all of the following are present: representative FICO of 760 or higher, six months of documented reserves after closing, and the property is one-unit owner-occupied.\n\nAll monthly debt obligations on the credit report are included, including installment payments with ten or more months remaining. Deferred student loans count at 1 percent of the balance unless a payment is documented that starts within twelve months.\n\nDTI is computed on qualifying income, not gross annual income, and every income source used must be verified."
+    },
+    {
+      "title": "Acme Underwriting Guide — Employment and Income",
+      "text": "Conventional loans require a two-year employment history. Employment months are documented with a verification of employment, and a borrower with under two years at their current employer needs previous-employer documentation or education equivalent.\n\nA borrower still within a probation period is acceptable only with two full months of pay stubs and an employer statement confirming the probation end date. Jury pay, foster care and military entitlement income are excluded.\n\nVariable income, including bonus and commission income, is averaged over twenty-four months and only counts with a two-year history of receipt from the same employer. Overtime income requires at least twelve months of continued receipt. Seasonal income is averaged with a two-year history and a documented likelihood of continuation."
+    },
+    {
+      "title": "Acme Underwriting Guide — Self-Employed Borrowers",
+      "text": "Borrowers who own 25 percent or more of a business are self-employed for underwriting purposes. Acme requires a minimum two-year history of self-employment with the same entity or a related field.\n\nDocumentation: two years of personal and business tax returns, a year-to-date profit and loss statement, and a signed business license or CPA certification of business existence. Income is computed as the lower of tax-return adjusted income or P&L annualized. Declining-income scenarios over twelve months require a written explanation and a conservative income treatment.\n\nThe self-employment income used for qualifying reduces by the borrower's documented business expense percentage."
+    },
+    {
+      "title": "Acme Underwriting Guide — Reserves",
+      "text": "Reserves are measured as months of PITIA held in liquid assets after closing.\n\nOwner-occupied purchases require two months of reserves. A one-unit investment property requires three months. A two-unit investment property requires six months of reserves for every borrower on the note.\n\nAcceptable reserve assets: savings and checking, vested retirement at 70 percent of value, and stock holdings at 75 percent. Unvested equity is not acceptable. Gifts already deposited that meet seasoning are acceptable as reserves only for owner-occupied loans."
+    },
+    {
+      "title": "Acme Underwriting Guide — Gift Funds",
+      "text": "Gift funds are permitted for owner-occupied purchases with no cap on the amount, provided the donor is a family member or an eligible close relative, and a gift letter is signed by both donor and borrower.\n\nInvestment property purchases require a minimum five percent of the down payment from the borrower's own funds; the remainder may be a gift from an eligible donor.\n\nDonor funds must be documented with a transfer letter and, when the funds are not seasoned in the borrower's account, the donor's own funds must be sourced. Large deposits in the borrower's account within sixty days of application require written explanation regardless of amount."
+    },
+    {
+      "title": "Acme Underwriting Guide — Appraisal Requirements",
+      "text": "Two- to four-unit properties require a full interior inspection appraisal underwriter-reviewed by an Acme-panel appraiser. Desktop appraisals are permitted only for one-unit owner-occupied purchases with a representative FICO of 720 or higher.\n\nThe appraiser must report market-based rent on a Form 1007 for two-unit properties when rental income is used to qualify. Rental income counts at 75 percent of the market rent after vacancy adjustment, and only when the borrower has a two-year history of property management or an executed lease is already in place.\n\nAppraisal waivers from public automated systems are accepted when offered, and no full appraisal is issued in those cases."
+    },
+    {
+      "title": "Acme Product Sheet — Rate Lock Policy",
+      "text": "Acme offers thirty-, forty-five- and sixty-day rate locks at par on conforming products. Ninety-day locks carry a 0.25 point fee collected at lock.\n\nA lock may be extended once for free within a five-day grace period after expiration. Extensions beyond the grace period cost 0.125 points per seven days.\n\nRe-locks: if pricing improves after expiration, the new lock applies with a re-lock fee of 0.25 points. Locks are confirmed by email the same day they are set by the lock desk, and a lock is not in effect until the confirmation email is sent."
+    },
+    {
+      "title": "Acme Product Sheet — Starter Program",
+      "text": "The Acme Starter program enables three percent down for first-time buyers on one-unit owner-occupied purchases. First-time buyer means no ownership interest in a principal residence in the last three years.\n\nEligibility: representative FICO of at least 680, debt-to-income at or under 43 percent, and completion of the Acme homebuyer education course before clear-to-close. No private mortgage insurance is required on the program; instead the rate carries a 0.15 add.\n\nIncome limits apply at 100 percent of area median income, verified with the final W-2 and the most recent pay stub at the time of application."
+    },
+    {
+      "title": "Acme Underwriting Guide — Private Mortgage Insurance",
+      "text": "Private mortgage insurance is required above 80 percent LTV on conventional one-unit owner-occupied loans.\n\nBorrower-requested cancellation is permitted on owner-occupied properties once amortized equity reaches twenty percent of original value, with a current appraisal and a clean twelve-month payment history. Automatic cancellation occurs at 78 percent of original value with no action by the borrower.\n\nOn investment properties, PMI is not cancellable by borrower request. Automatic cancellation on investment loans occurs at 65 percent of original value only."
+    },
+    {
+      "title": "Acme Underwriting Guide — Seller Concessions",
+      "text": "Interested-party contributions on conventional loans are capped by the down payment band.\n\nFor owner-occupied properties: nine percent when the down payment exceeds twenty percent, six percent when the down payment is between ten and twenty-five percent, and three percent under a ten percent down payment.\n\nOn investment properties, the cap is two percent regardless of the down payment. In all cases, contributions exceeding the applicable cap must be reduced from the sales price and the LTV recalculated, never netted from closing costs."
+    }
+  ]
+}

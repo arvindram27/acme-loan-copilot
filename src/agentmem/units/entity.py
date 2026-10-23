@@ -34,13 +34,29 @@ ALLOWED_ATTRS: dict[str, tuple[str, ...]] = {
     "loan": ("loan_amount", "down_payment", "ltv", "purpose"),
 }
 
-EXTRACTION_PROMPT = """You extract structured loan facts from borrowed messages.
-Allowed attributes, exactly these keys:
-{attrs}
-Pick ONE: {kinds}
-Return JSON: {{"facts": [{{"kind": "...", "name": "...", "attr": "...",
-"value": <string|number|bool>}}]}}
-Empty facts list if none. Values must be exactly what was said, no inference."""
+EXTRACTION_PROMPT = """Extract factual statements about loan parties from the message below.
+
+Allowed kinds: applicant, coborrower, property, loan.
+Attributes per kind:
+- applicant and coborrower: income_monthly, income_annual, employment_months, fico, dti, first_time_buyer
+- property: units, purchase_price, property_type, address
+- loan: loan_amount, down_payment, ltv, purpose
+
+Rules:
+- Extract ONLY facts explicitly stated in the message; transcribe numbers exactly as heard.
+- "84,000" -> 84000, "84k" -> 84000, "75 percent" -> 75, "two years" -> employment_months 24.
+- Income stated per month -> income_monthly; per year or annually -> income_annual.
+- Skip questions, requests, and anything unknown.
+- If no eligible fact exists, return an empty list.
+
+Return JSON exactly in this shape: {{"facts": [{{"kind": "...", "name": "...", "attr": "...", "value": <string|number|boolean>}}]}}
+
+Examples:
+message: "Jane makes 105,000 a year now" -> {{"facts": [{{"kind": "applicant", "name": "Jane", "attr": "income_annual", "value": 105000}}]}}
+message: "what is the max LTV for a two-unit investment" -> {{"facts": []}}
+message: "the property at 48 Elm Street has 2 units" -> {{"facts": [{{"kind": "property", "name": "48 Elm Street", "attr": "units", "value": 2}}]}}
+
+Message to process:"""
 
 
 def get_or_create_entity(

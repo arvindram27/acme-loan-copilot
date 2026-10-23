@@ -47,6 +47,7 @@ class ChatClient:
         *,
         temperature: float = 0.2,
         max_tokens: int = 1024,
+        response_format: dict | None = None,
     ) -> ChatResult:
         """One chat call. messages use the OpenAI shape: {"role", "content"}."""
         resp = self._client.chat.completions.create(
@@ -54,6 +55,7 @@ class ChatClient:
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
+            **({"response_format": response_format} if response_format else {}),
         )
         self.calls += 1
         usage = resp.usage

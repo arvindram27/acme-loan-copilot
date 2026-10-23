@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 
 from agentmem.providers.chat import ChatClient
 from agentmem.providers.embed import Embedder
-from agentmem.units import conversation, entity, persona
+from agentmem.units import conversation, entity, extract, knowledge, persona
 
 SYSTEM_BASE = (
     "You are the loan-officer copilot for Acme Home Loans. Answer from the "
@@ -34,6 +34,9 @@ class TurnOutcome:
     recent_turns: int = 0
     recalled_turns: int = 0
     facts_used: dict = field(default_factory=dict)
+    facts_written: int = 0
+    dropped_facts: list = field(default_factory=list)
+    retrieved_chunks: int = 0
     tokens: int = 0
 
 
@@ -66,6 +69,8 @@ class MemoryAgent:
         embedder: Embedder,
         recency_k: int = 10,
         recall_k: int = 4,
+        kb_min_score: float = 0.30,
+        extract_turns: bool = True,
     ):
         self.conn = conn
         self.user_id = user_id
@@ -73,6 +78,8 @@ class MemoryAgent:
         self.embedder = embedder
         self.recency_k = recency_k
         self.recall_k = recall_k
+        self.kb_min_score = kb_min_score
+        self.extract_turns = extract_turns
         persona.ensure_default(conn, user_id)
 
     def answer(
@@ -93,6 +100,20 @@ class MemoryAgent:
             conn, user_id=self.user_id, thread_id=thread_id,
             role="user", content=text, embedding=query_vec,
         )["seq"]
+
+        # Extraction BEFORE context assembly: if the user corrects a fact in
+        # this very turn, the answer already reflects the new value.
+        facts_written = 0
+        dropped: list = []
+        raw, _model = extract.extract_facts(self.chat, text)
+        if self.extract_turns and raw:
+            valid, dropped = extract.validate_facts(raw)
+            if valid:
+                written = extract.write_validated(
+                    conn, user_id=self.user_id, thread_id=thread_id,
+                    facts=valid,
+                )
+                facts_written = sum(1 for w in written if w["changed"])
 
         persona_text = persona.format_persona(persona.read_active(conn, self.user_id))
 
@@ -121,6 +142,15 @@ class MemoryAgent:
         if recalled:
             blocks.append("## Earlier in this thread (semantically relevant)\n"
                           + conversation.format_turns(recalled))
+        chunks = knowledge.hybrid_search(
+            conn, query=text, query_embedding=query_vec, k=4,
+            min_score=self.kb_min_score,
+        )
+        if chunks:
+            blocks.append(
+                "## Policy excerpts (cite as [title §chunk]; quote numbers "
+                "only from here)\n" + knowledge.format_chunks(chunks)
+            )
         system_prompt = "\n\n".join(blocks)
 
         messages = [{"role": "system", "content": system_prompt}]
@@ -139,5 +169,8 @@ class MemoryAgent:
             recent_turns=len(recent_before_current),
             recalled_turns=len(recalled),
             facts_used=facts,
+            facts_written=facts_written,
+            dropped_facts=dropped,
+            retrieved_chunks=len(chunks),
             tokens=out.total_tokens,
         )
