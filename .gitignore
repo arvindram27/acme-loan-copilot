@@ -1,0 +1,15 @@
+# Secrets
+.env
+*.env.local
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# venv lives outside the OneDrive-synced folder (UV_PROJECT_ENVIRONMENT)
+.venv/
+
+# data dirs created at runtime
+var/

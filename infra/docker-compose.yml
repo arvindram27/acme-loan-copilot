@@ -1,0 +1,21 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: acme-mem-db
+    environment:
+      POSTGRES_USER: acme
+      POSTGRES_PASSWORD: acme_local_dev
+      POSTGRES_DB: agentmem
+    ports:
+      - "127.0.0.1:15432:5432"
+    volumes:
+      - acme_mem_pgdata:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U acme -d agentmem"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  acme_mem_pgdata:
