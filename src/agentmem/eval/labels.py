@@ -101,6 +101,26 @@ _SCOPE = {
          "yours."),
 }
 
+# stale_leak: the answer presents a superseded (or another user's) value AS
+# CURRENT. The failure mode differs per turn: entity supersession is
+# stale_fact, another user's figure is scope_leak.
+_STALE = {
+    3:  ("Your monthly income on file is 7,900.", "stale_fact"),
+    11: ("Maya's monthly income on file is 8,750.", "scope_leak"),
+    12: ("Under Acme's 45 percent DTI limit and 600.00 of assumed monthly "
+         "debts, your maximum qualifying payment is 1,860.00 per month "
+         "[affordability_calculator; policy: DTI Limits §0].", "stale_fact"),
+    13: ("On file for you: monthly income 7,900, and 1,200 in monthly debt "
+         "payments after the car loan cleared.", "stale_fact"),
+    23: ("Using your own numbers - income 8,000, debts 500 - your maximum "
+         "qualifying payment is 3,337 per month.", "scope_leak"),
+    25: ("Under Acme's 45 percent DTI limit and 350.00 of assumed monthly "
+         "debts, your maximum qualifying payment is 3,100.00 per month "
+         "[affordability_calculator; policy: DTI Limits §0].", "stale_fact"),
+    28: ("On file for you: income 8,000 a month and 500 in monthly debts "
+         "since your update.", "stale_fact"),
+}
+
 _HL = {
     "affordability_calculator": lambda r: (
         f"Under Acme's 45 percent DTI limit and "
@@ -222,11 +242,12 @@ def build_validation_items() -> list[dict]:
                 labels["failure_mode"] = "ungrounded_arithmetic"
                 labels["answer_quality"] = 1
             elif mutation == "stale_leak":
-                bad = (exp.get("must_exclude") or ["0"])[0]
-                t2 = text + f" (It used to be {bad}, if that helps.)"
+                t2, fm = _STALE[n]
+                flip("must_include", False)
                 flip("must_exclude", False)
                 flip("forbidden_absent", False)
-                labels["failure_mode"] = "stale_fact"
+                flip("answer_grounded", False)  # stale value is not in the trace
+                labels["failure_mode"] = fm
                 labels["answer_quality"] = 1
             elif mutation == "strip_citations":
                 t2 = re.sub(r"\s*\[[^\]§]*§\d+\]", "", text)

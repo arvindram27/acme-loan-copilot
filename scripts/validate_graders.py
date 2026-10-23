@@ -87,10 +87,6 @@ def main() -> int:
 
     # ---- choice/score checks: exact-match accuracy ---------------------
     print("\n== categorical checks (exact match) ==")
-    for check in ("failure_mode", "answer_quality"):
-        for grader in ("jev", "judge"):
-            got = [(it["item_no"], r) for it, r in zip(items, rows)
-                   if False]
     cat = defaultdict(lambda: [0, 0])
     by_item = defaultdict(dict)
     for r in rows:

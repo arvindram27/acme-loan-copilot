@@ -96,9 +96,7 @@ def test_code_no_panic_on_pre_tool_answer():
 FIXTURE = {
     "model": "jev-1.14.0",
     "answers": {
-        "number_provenance": {"type": "noul", "noul": 0.97},
         "answer_grounded": {"type": "noul", "noul": 0.42},      # unsure!
-        "citation_present": {"type": "noul", "noul": 0.9},
         "forbidden_absent": {"type": "noul", "noul": 0.9},
         "failure_mode": {"type": "choice", "choice": "stale_fact",
                          "confidence": 0.62,
@@ -135,7 +133,7 @@ def test_jev_batches_all_questions_in_one_call():
                 refs=[{"title": "DTI", "chunk_index": 1, "preview": "p"}])
     rows = jg.grade({"required_tool": "affordability_calculator"}, o,
                     question="q")
-    assert len(rows) == 6
+    assert len(rows) == 4
     assert set(JEV_QUESTIONS) <= set(CHECKS)
     qs = t.last_payload["questions"]
     assert set(qs) == set(JEV_QUESTIONS)
@@ -148,7 +146,6 @@ def test_jev_escalation_band_marks_unsure_only():
     o = Outcome("answer", tool_results=[], refs=[])
     rows = {r.check: r for r in jg.grade({}, o, question="q")}
     assert rows["answer_grounded"].escalated is True        # 0.42 in (0.35, 0.65)
-    assert rows["number_provenance"].escalated is False    # 0.97
     assert rows["failure_mode"].escalated is False          # conf 0.62
     assert rows["answer_quality"].escalated is False
 
@@ -186,7 +183,6 @@ def test_cascade_judge_targets_only_escalated_checks():
     got = {(r.grader, r.check) for r in rows}
     assert ("judge", "answer_grounded") in got       # jev was unsure (0.42)
     assert ("judge", "answer_quality") not in got    # jev was sure (conf .7)
-    assert ("judge", "number_provenance") not in got  # jev was sure
     asked = judge.asked[0]["content"]
     assert "answer_grounded" in asked
 

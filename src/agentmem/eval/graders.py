@@ -214,27 +214,15 @@ class CodeGrader:
 # ---------------------------------------------------------------------------
 
 JEV_QUESTIONS = {
-    "number_provenance": {
-        "type": "noul",
-        "instructions": (
-            "Every numerical result in `answer` appears in `tool_calls[*]"
-            ".result`, in `question`, or in `known_facts`."
-        ),
-    },
     "answer_grounded": {
         "type": "noul",
         "instructions": (
-            "Every policy statement in `answer` (rates, limits, "
-            "percentages, dollar rules) is supported by a policy excerpt "
-            "listed in `retrieved`. Statements without any policy content "
+            "Every factual claim in `answer` (rates, limits, percentages, "
+            "dollar amounts, ratios) is supported by a policy excerpt in "
+            "`retrieved`, by a value in `tool_calls[*].result`, by "
+            "`known_facts`, or by `question`. A claim that appears in none "
+            "of these is ungrounded. Statements with no such factual claim "
             "count as true."
-        ),
-    },
-    "citation_present": {
-        "type": "noul",
-        "instructions": (
-            "`answer` cites at least one entry from `retrieved`, by title, "
-            "or by a bracketed `[title §index]` reference."
         ),
     },
     "forbidden_absent": {
@@ -356,8 +344,7 @@ class LLMJudge:
     def grade(self, expected: dict, outcome, question: str = "",
               which: list[str] | None = None) -> list[Grade]:
         state = JevGrader.state(expected, outcome, question)
-        checks = which or ["numeric_provenance", "answer_grounded",
-                           "citation_present", "forbidden_absent",
+        checks = which or ["answer_grounded", "forbidden_absent",
                            "failure_mode", "answer_quality"]
         messages = [
             {"role": "system",
