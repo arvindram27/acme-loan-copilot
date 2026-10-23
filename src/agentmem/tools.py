@@ -36,18 +36,20 @@ def _num(args: dict, key: str, required: bool = True, default=None):
 def affordability_calculator(args: dict, conn=None) -> dict:
     income = _num(args, "income_monthly")
     debts = _num(args, "monthly_debts", required=False, default=0.0)
-    # Tool-input validation: the planner may pass max_dti_pct: 0 (it did,
-    # once) — a poisoned percentage must not produce an authoritative-looking
-    # negative payment. Anything outside (0, 100] falls back to the default,
-    # and the result says so.
+    # Acme's DTI cap is POLICY, not a caller override. The planner may try
+    # to pass max_dti_pct (it has: 0, and 36, both wrong) — the tool applies
+    # the policy default regardless and notes any ignored override.
     dti_raw = args.get("max_dti_pct")
-    dti_cap = float(dti_raw) if dti_raw is not None else None
     note = None
-    if dti_cap is None or not 0 < dti_cap <= 100:
-        if dti_cap is not None:
-            note = (f"max_dti_pct={dti_cap} out of range (0, 100]; "
-                    f"used default {MAX_DTI_DEFAULT}")
-        dti_cap = MAX_DTI_DEFAULT
+    if dti_raw is not None:
+        try:
+            passed = float(dti_raw)
+        except (TypeError, ValueError):
+            passed = None
+        if passed is None or passed != MAX_DTI_DEFAULT:
+            note = (f"max_dti_pct={dti_raw} ignored; Acme policy DTI is "
+                    f"{MAX_DTI_DEFAULT}")
+    dti_cap = MAX_DTI_DEFAULT
     if income <= 0:
         raise ValueError("income_monthly must be positive")
     max_payment = round(income * (dti_cap / 100) - max(debts, 0), 2)

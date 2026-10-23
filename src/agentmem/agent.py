@@ -23,9 +23,16 @@ from agentmem.units import conversation, entity, extract, knowledge, persona, to
 
 SYSTEM_BASE = (
     "You are the loan-officer copilot for Acme Home Loans. Answer from the "
-    "context you are given. If a fact about an applicant is not in your "
-    "context, say you don't know it. Quote policy numbers only when they "
-    "appear in retrieved knowledge; never invent rates."
+    "context you are given.\n"
+    "- 'Known facts' are the applicant's current, authoritative record. If "
+    "an older message in the conversation contradicts a known fact, the "
+    "known fact wins (facts are superseded, the chat is not).\n"
+    "- If a fact about an applicant is not in your context, say you don't "
+    "know it.\n"
+    "- Quote policy numbers only when they appear in retrieved knowledge; "
+    "never invent rates. When your answer uses a policy rule (DTI, LTV, "
+    "credit minimums, lock fees), cite it as [title §chunk] even when a "
+    "tool also supplied the number."
 )
 
 
@@ -156,7 +163,17 @@ class MemoryAgent:
             if resolved:
                 facts[name] = {f"{kind}.{a}": v
                                for a, v in resolved["facts"].items()}
-        facts_text = "\n".join(f"{name}: {kv}" for name, kv in facts.items())
+        # The applicant's own facts (first-person statements bound to SELF)
+        # are always in scope for the current user.
+        self_resolved = entity.resolve(conn, user_id=self.user_id,
+                                       kind="applicant", name=self.user_id)
+        if self_resolved and self_resolved["facts"]:
+            facts["you"] = {f"applicant.{a}": v
+                            for a, v in self_resolved["facts"].items()}
+        facts_text = "\n".join(
+            f"{'' if name == 'you' else name + ' '}{k} = {v}"
+            for name, kv in facts.items() for k, v in kv.items()
+        )
 
         recent = conversation.recent_turns(conn, thread_id, k=self.recency_k)
         recent_before_current = [t for t in recent if t["seq"] < seq]
@@ -326,7 +343,9 @@ class MemoryAgent:
                 note = (f"## Tool result — {t['name']} ({t['source']})\n"
                         f"{t['result_for_model']}\n\n"
                         "Use this result. Call another tool or give the "
-                        "final answer.")
+                        "final answer. If any policy rule, fee, or limit is "
+                        "involved, cite it as [title §chunk] from the "
+                        "retrieved excerpts.")
             except (ValueError, KeyError, TypeError) as exc:
                 note = (f"## Tool error — {decision.get('name')}\n{exc}\n"
                         "Fix the arguments or answer without the tool.")

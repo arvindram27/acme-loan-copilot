@@ -42,6 +42,12 @@ _KB = {
                       "property, the maximum LTV is 75 percent."}],
          "For a 2-unit investment property, Acme's maximum LTV is 75 "
          "percent [Acme Underwriting Guide - LTV Limits §0]."),
+    21: ([{"title": "LTV Limits", "chunk_index": 0,
+           "preview": "For a two-unit owner-occupied property, the maximum "
+                      "LTV is 85 percent."}],
+         "Yes - for a two-unit owner-occupied property Acme's maximum LTV "
+         "is 85 percent, so 380,000 on a 400,000 purchase (95 percent LTV) "
+         "would exceed it [Acme Underwriting Guide - LTV Limits §0]."),
     8:  ([{"title": "Rate Lock Policy", "chunk_index": 0,
            "preview": "A lock may be extended once for free within a "
                       "five-day grace period after expiration. Extensions "
@@ -97,11 +103,10 @@ _SCOPE = {
 
 _HL = {
     "affordability_calculator": lambda r: (
-        f"Under Acme's 45 percent DTI limit, with monthly income "
-        f"{r['assumed_debts_monthly'] + r['max_qualifying_payment']:,.2f} "
-        f"and assumed debts {r['assumed_debts_monthly']:,.2f}, your maximum "
-        f"qualifying payment is {r['max_qualifying_payment']:,.2f} per "
-        "month [affordability_calculator; policy: DTI Limits §0]."),
+        f"Under Acme's 45 percent DTI limit and "
+        f"{r['assumed_debts_monthly']:,.2f} of assumed monthly debts, your "
+        f"maximum qualifying payment is {r['max_qualifying_payment']:,.2f} "
+        "per month [affordability_calculator; policy: DTI Limits §0]."),
     "rate_lookup": lambda r: (
         f"A {r['term_years']}-year fixed with a {r['lock_days']}-day lock "
         f"prices at {r['rate_pct']:g} percent"

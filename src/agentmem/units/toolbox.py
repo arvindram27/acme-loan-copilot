@@ -33,6 +33,7 @@ Tools available:
 Rules:
 - Compute nothing yourself. If a tool matches the need, call it with exactly the arguments it needs.
 - MANDATORY CALLS, even when the arithmetic looks trivial or the numbers are already in the question: any affordability/payment/DTI question uses affordability_calculator; any rate/lock question uses rate_lookup; any LTV/price/loan-size cross-check uses ltv_check.
+- affordability_calculator applies Acme's 45 percent policy DTI itself — do NOT pass max_dti_pct.
 - If a "required_tool" is named in the context, you MUST emit its tool action FIRST, with arguments read from the question. Do not answer instead of calling a required tool.
 - Numeric facts must come from tool outputs, never from your own arithmetic.
 - If no tool helps, or you already have what you need to answer, answer now.
@@ -255,8 +256,16 @@ def required_tool(text: str) -> str | None:
     like to compute in their heads. Scenario categories that MUST go through
     a tool are matched by keyword, and the planner is told it is required.
     The eval later verifies the call actually happened, not just the answer.
-    """
+
+    Recall questions are exempt: asking what was SAID is answered from
+    memory, not by recomputing (recomputing with fresh, possibly-wrong args
+    is exactly how a recall answer gets poisoned)."""
     t = text.lower()
+    if any(k in t for k in (
+        "earlier", "remind me", "recall", "which one was it",
+        "mentioned", "what did we say", "do you remember",
+    )):
+        return None
     if "ltv" in t or "loan-to-value" in t:
         return "ltv_check"
     if any(k in t for k in (

@@ -145,17 +145,23 @@ class CodeGrader:
                 pass_=required in names,
                 rationale=(f"required {required}; ran {names}"),
             ))
-            # args validity: no errors, and no degenerate clamp note
+            # args validity: no errors, and no degenerate output. The clamp
+            # NOTE (constraint_used) is the tool self-correcting a bad input —
+            # that is desired, not a defect. A degenerate result (negative
+            # qualifying payment) is what must be flagged.
             results = outcome.tool_results or [] if outcome else []
-            clamped = any(
-                "constraint_used" in (t.get("result") or {})
-                for t in results if t.get("name") == required
-            )
             errored = any(t.get("source") == "error" for t in results)
+            degenerate = any(
+                t.get("name") == required
+                and isinstance((t.get("result") or {}).get(
+                    "max_qualifying_payment"), (int, float))
+                and (t["result"]["max_qualifying_payment"] < 0)
+                for t in results
+            )
             out.append(Grade(
                 check="tool_args_valid", grader="code",
-                pass_=bool(results) and not errored and not clamped,
-                rationale=("clamp note present" if clamped
+                pass_=bool(results) and not errored and not degenerate,
+                rationale=("degenerate result" if degenerate
                            else ("tool errored" if errored else "clean")),
             ))
 

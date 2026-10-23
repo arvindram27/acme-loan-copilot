@@ -107,7 +107,11 @@ def validate_facts(raw_facts: list[dict]) -> tuple[list[dict], list[str]]:
 def write_validated(
     conn, *, user_id: str, thread_id: str, facts: list[dict]
 ) -> list[dict]:
-    """Persist validated facts. Returns what was actually written."""
+    """Persist validated facts. Returns what was actually written.
+
+    First-person facts (name "SELF", from the extraction prompt) are bound to
+    the app-supplied user_id, so "I make 8,750" becomes the applicant entity
+    named by user_id — the same entity later turns read and supersede."""
     written = []
     for f in facts:
         out = entity_write(conn, user_id=user_id, thread_id=thread_id, fact=f)
@@ -121,8 +125,9 @@ def entity_write(conn, *, user_id: str, thread_id: str, fact: dict) -> dict:
     # Local import avoids a cycle at module load.
     from agentmem.units import entity
 
+    name = user_id if fact["name"] == "SELF" else fact["name"]
     return entity.write_fact(
         conn, user_id=user_id, thread_id=thread_id, kind=fact["kind"],
-        name=fact["name"], attr=fact["attr"], value=fact["value"],
+        name=name, attr=fact["attr"], value=fact["value"],
         source_kind="stated",
     )

@@ -27,9 +27,10 @@ KINDS = ("applicant", "coborrower", "property", "loan")
 ALLOWED_ATTRS: dict[str, tuple[str, ...]] = {
     "applicant": (
         "income_monthly", "income_annual", "employment_months",
-        "fico", "dti", "first_time_buyer",
+        "monthly_debts", "fico", "dti", "first_time_buyer",
     ),
-    "coborrower": ("income_monthly", "income_annual", "employment_months", "fico"),
+    "coborrower": ("income_monthly", "income_annual", "employment_months",
+                   "monthly_debts", "fico"),
     "property": ("units", "purchase_price", "property_type", "address"),
     "loan": ("loan_amount", "down_payment", "ltv", "purpose"),
 }
@@ -38,7 +39,7 @@ EXTRACTION_PROMPT = """Extract factual statements about loan parties from the me
 
 Allowed kinds: applicant, coborrower, property, loan.
 Attributes per kind:
-- applicant and coborrower: income_monthly, income_annual, employment_months, fico, dti, first_time_buyer
+- applicant and coborrower: income_monthly, income_annual, employment_months, monthly_debts, fico, dti, first_time_buyer
 - property: units, purchase_price, property_type, address
 - loan: loan_amount, down_payment, ltv, purpose
 
@@ -46,6 +47,8 @@ Rules:
 - Extract ONLY facts explicitly stated in the message; transcribe numbers exactly as heard.
 - "84,000" -> 84000, "84k" -> 84000, "75 percent" -> 75, "two years" -> employment_months 24.
 - Income stated per month -> income_monthly; per year or annually -> income_annual.
+- Any recurring payment obligation (car loan, student loan, credit cards, "I pay X a month toward ...") -> monthly_debts X.
+- When the speaker states a fact about THEMSELVES ("I", "my", "we", "our"), set name to exactly "SELF" — do not invent a person's name.
 - Skip questions, requests, and anything unknown.
 - If no eligible fact exists, return an empty list.
 
@@ -53,6 +56,8 @@ Return JSON exactly in this shape: {{"facts": [{{"kind": "...", "name": "...", "
 
 Examples:
 message: "Jane makes 105,000 a year now" -> {{"facts": [{{"kind": "applicant", "name": "Jane", "attr": "income_annual", "value": 105000}}]}}
+message: "I make 8,750 a month now" -> {{"facts": [{{"kind": "applicant", "name": "SELF", "attr": "income_monthly", "value": 8750}}]}}
+message: "1,200 of that goes to my car loan payment" -> {{"facts": [{{"kind": "applicant", "name": "SELF", "attr": "monthly_debts", "value": 1200}}]}}
 message: "what is the max LTV for a two-unit investment" -> {{"facts": []}}
 message: "the property at 48 Elm Street has 2 units" -> {{"facts": [{{"kind": "property", "name": "48 Elm Street", "attr": "units", "value": 2}}]}}
 
