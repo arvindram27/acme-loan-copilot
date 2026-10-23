@@ -35,6 +35,16 @@ class Settings(BaseSettings):
     # milestones; the eval falls back to the chat model and reports that).
     judge_model: str | None = None
 
+    # Jev (TypeSafe System One): a decision-model grader, eval-only. It never
+    # sits in the chat path — the runtime stays one model so backends compare
+    # one variable at a time.
+    jev_base_url: str = "https://api.typesafe.ai"
+    jev_key: str | None = None
+    jev_model: str = "jev-latest"
+    # Noul values inside (low, high) are "unsure" and escalate to the judge.
+    jev_escalate_low: float = 0.35
+    jev_escalate_high: float = 0.65
+
     # 127.0.0.1, not localhost: Docker maps the port on IPv4 only here, and
     # libpq's first attempt on ::1 can hang instead of failing fast.
     database_url: str = "postgresql://acme:acme_local_dev@127.0.0.1:15432/agentmem"

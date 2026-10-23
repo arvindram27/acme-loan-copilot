@@ -47,7 +47,7 @@ def _missing_numbers(answer: str, outcomes: list[dict], question: str) -> list[s
                 if num in qclean:      # a number the user already said
                     continue
                 if num not in clean:
-                    missing.append(num)
+                    missing.add(num)
     return missing
 
 
