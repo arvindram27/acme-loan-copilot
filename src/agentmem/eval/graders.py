@@ -52,6 +52,14 @@ _FAILURE_MODES = {
         "States a number that cannot be traced to `question`, "
         "`known_facts`, or a tool result."
     ),
+    "omits_tool_result": (
+        "The tool ran and produced an authoritative number, but the answer "
+        "never states it (evades, hedges, or changes the subject)."
+    ),
+    "memory_miss": (
+        "The user's own stored fact exists in `known_facts` or the supplied "
+        "trace, but the answer claims not to have it."
+    ),
     "scope_leak": (
         "Uses information that belongs to another user or thread."
     ),
@@ -62,6 +70,26 @@ _CITE_RE = re.compile(r"\[[^\]§]+§\d+\]")
 
 def _norm(text: str) -> str:
     return (text or "").replace("$", "").replace(",", "").replace("%", "")
+
+
+@dataclass
+class Outcome:
+    """The graded trace for one answer — the duck-typed shape of TurnOutcome
+    (or a synthetic construction) that graders read. Kept here so labels
+    and tests never import the agent to build states."""
+
+    text: str = ""
+    tool_calls: list = field(default_factory=list)
+    tool_results: list = field(default_factory=list)
+    retrieved_refs: list = field(default_factory=list)
+    facts_used: dict = field(default_factory=dict)
+
+    def __post_init__(self):
+        if self.tool_results and not self.tool_calls:
+            self.tool_calls = [
+                {"name": t.get("name"), "source": t.get("source", "fresh")}
+                for t in self.tool_results
+            ]
 
 
 @dataclass

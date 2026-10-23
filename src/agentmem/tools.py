@@ -7,8 +7,12 @@ is the prose version; these are the numbers the tools act on).
 
 RATE_SHEET = {
     # term_years -> lock_days -> (rate_pct, points)
-    15: {30: (5.750, 0.0), 45: (5.750, 0.0), 60: (5.625, 0.25), 90: (5.500, 0.25)},
-    30: {30: (6.375, 0.0), 45: (6.375, 0.0), 60: (6.250, 0.25), 90: (6.125, 0.5)},
+    # Lock fees mirror the Rate Lock Policy doc exactly: 30/45/60-day locks
+    # at par; a 90-day lock carries a 0.25 point fee collected at lock.
+    # The rate VALUES are the tool's own authority (the corpus quotes no
+    # rates — it only prices locks).
+    15: {30: (5.625, 0.0), 45: (5.625, 0.0), 60: (5.625, 0.0), 90: (5.625, 0.25)},
+    30: {30: (6.250, 0.0), 45: (6.250, 0.0), 60: (6.250, 0.0), 90: (6.250, 0.25)},
 }
 
 # occupancy -> units bucket -> max LTV (mirrors the LTV corpus doc)
