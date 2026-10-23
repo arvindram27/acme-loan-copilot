@@ -51,7 +51,7 @@ def main() -> int:
     print("[BASELINE, no corpus]")
     print(baseline)
     print("=" * 76)
-    print(f"[MEMORY AGENT + KB] retrieved_chunks={out_ltv.retrieved_chunks} "
+    print(f"[MEMORY AGENT + KB] retrieved_chunks={len(out_ltv.retrieved_refs)} "
           f"tokens={out_ltv.tokens}")
     print(out_ltv.text)
     print("=" * 76)

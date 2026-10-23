@@ -177,6 +177,7 @@ def run_tool(
         return {
             "name": name, "args": args, "call_id": cached["call_id"],
             "source": "cache", "result_for_model": _model_result(full, None),
+            "result_full": full,
             "result_bytes": cached["bytes"], "offloaded": False,
         }
 
@@ -213,6 +214,7 @@ def run_tool(
             "name": name, "args": args, "call_id": call_id,
             "source": "fresh",
             "result_for_model": _model_result(result, artifact_path),
+            "result_full": result,
             "result_bytes": nbytes,
             "offloaded": bool(artifact_path),
         }

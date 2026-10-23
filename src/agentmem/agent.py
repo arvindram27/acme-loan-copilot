@@ -60,8 +60,9 @@ class TurnOutcome:
     facts_used: dict = field(default_factory=dict)
     facts_written: int = 0
     dropped_facts: list = field(default_factory=list)
-    retrieved_chunks: int = 0
-    tool_calls: list = field(default_factory=list)
+    retrieved_refs: list = field(default_factory=list)   # [{title, chunk_index}]
+    tool_calls: list = field(default_factory=list)       # name/source/bytes meta
+    tool_results: list = field(default_factory=list)     # full results, for grading
     tokens: int = 0
 
 
@@ -223,10 +224,19 @@ class MemoryAgent:
             facts_used=facts,
             facts_written=facts_written,
             dropped_facts=dropped,
-            retrieved_chunks=len(chunks),
+            retrieved_refs=[
+                {"chunk_id": c["chunk_id"], "title": c["title"],
+                 "chunk_index": c["chunk_index"], "preview": c["text"][:240]}
+                for c in chunks
+            ],
             tool_calls=[
                 {k: t[k] for k in ("name", "source", "result_bytes",
                                    "offloaded")}
+                for t in tool_outcomes
+            ],
+            tool_results=[
+                {"name": t["name"], "args": t["args"], "source": t["source"],
+                 "result": t["result_full"]}
                 for t in tool_outcomes
             ],
             tokens=out.total_tokens,
