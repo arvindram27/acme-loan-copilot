@@ -53,6 +53,7 @@ Two Windows gotchas baked into the config:
 | 1 | Conversation + persona | **done** |
 | 2 | Entity memory + supersession (`002_entity.sql`, live demo: corrected income resolves, stale excluded) | **done** |
 | 3 | Knowledge base + hybrid retrieval (`003_kb.sql`, 12-doc corpus, RRF over keyword+vector, cited answers) + guarded LLM extraction | **done** |
+| 4 | Toolbox + tool log (`004_tools.sql`: semantic tool choice, args-hash cache with TTL, artifact offload, planner loop with dedupe + output verification) | **done** |
 | 2 | Entity memory + supersession | — |
 | 3 | Knowledge base + hybrid retrieval | — |
 | 4 | Toolbox + tool log | — |
