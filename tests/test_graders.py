@@ -221,3 +221,24 @@ def test_grade_rows_unique_per_grader():
     rows = run_cascade(0, {"cite": True}, o, "", jev=jg, judge=judge)
     keys = [(r.grader, r.check) for r in rows]
     assert len(keys) == len(set(keys)), "UNIQUE(item, grader, check)"
+
+
+@pytest.mark.parametrize("value,answer,include,exclude", [
+    ("45", "The cap is 450000.", False, True),
+    ("45", "The cap is 45 percent.", True, False),
+    ("8750", "Income 87,500.", False, True),
+    ("8750", "Income 8,750.", True, False),
+    ("1200", "Debt -1,200.", False, True),
+    ("-1200", "Debt -1,200.", True, False),
+    ("3.5", "Rate 35%.", False, True),
+    ("3.5", "Rate 3.5%.", True, False),
+    ("2737", "Payment 2,737.50.", True, False),
+])
+def test_code_numeric_boundaries(value, answer, include, exclude):
+    """must_include and must_exclude must not match by substring."""
+    def grade(key):
+        rows = CodeGrader().grade({key: [value]}, Outcome(answer), question="")
+        return {r.check: r for r in rows}[key].pass_
+
+    assert grade("must_include") is include
+    assert grade("must_exclude") is exclude

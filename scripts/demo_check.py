@@ -17,6 +17,7 @@ import psycopg
 
 from agentmem.app.deps import get_langgraph, make_agent
 from agentmem.db import migrate
+from agentmem.eval.numcompare import contains_value
 from agentmem.settings import get_settings
 
 SEED = [
@@ -44,9 +45,7 @@ QUESTIONS = [
 ]
 
 
-def _norm(t: str) -> str:
-    return (t.replace(",", "").replace("$", "").replace("%", "")
-             .replace(" ", "").replace(".", "").lower())
+
 
 
 def _trace(out) -> dict:
@@ -101,9 +100,8 @@ def run_backend(backend: str, conn) -> list[dict]:
         _save_trace(conn, user, thread, backend,
                     _next_seq(conn, user, thread, backend), q, out)
 
-        n = _norm(out.text)
-        ok_inc = all(_norm(v) in n for v in inc)
-        ok_exc = all(_norm(v) not in n for v in exc)
+        ok_inc = all(contains_value(out.text, v) for v in inc)
+        ok_exc = all(not contains_value(out.text, v) for v in exc)
 
         notes: list[str] = []
         if kind == "policy":

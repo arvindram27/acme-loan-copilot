@@ -16,6 +16,7 @@ import json
 import re
 from dataclasses import dataclass, field
 
+from agentmem.eval import numcompare
 from agentmem.units import toolbox
 
 CHECKS = [
@@ -133,7 +134,8 @@ class CodeGrader:
 
     def grade(self, expected: dict, outcome, question: str = "") -> list[Grade]:
         out: list[Grade] = []
-        answer = _norm(outcome.text if outcome else "")
+        raw = outcome.text if outcome else ""
+        answer = _norm(raw)
         question = _norm(question)
         required = expected.get("required_tool")
 
@@ -166,8 +168,9 @@ class CodeGrader:
             ))
 
         if "must_include" in expected:
+            # Numeric-aware: 45 must not match 450000, 8750 not 87500.
             miss = [v for v in expected["must_include"]
-                    if _norm(str(v)) not in answer]
+                    if not numcompare.contains_value(raw, v)]
             out.append(Grade(
                 check="must_include", grader="code", pass_=not miss,
                 rationale=("absent from answer" if miss else "present"),
@@ -175,7 +178,7 @@ class CodeGrader:
 
         if "must_exclude" in expected:
             leak = [v for v in expected["must_exclude"]
-                    if _norm(str(v)) in answer]
+                    if numcompare.contains_value(raw, v)]
             out.append(Grade(
                 check="must_exclude", grader="code", pass_=not leak,
                 rationale=(f"leaked {leak}" if leak else "absent"),
@@ -188,7 +191,7 @@ class CodeGrader:
             # fabricated number is failure_mode's job, a poisoned result is
             # tool_args_valid's, a wrong value is must_include's.
             nums = _numbers_in_results(outcome.tool_results or [])
-            reached = [n for n in nums if f"{n:g}" in answer]
+            reached = [n for n in nums if numcompare.contains_value(raw, n)]
             out.append(Grade(
                 check="number_provenance", grader="code",
                 pass_=bool(nums) and bool(reached),
