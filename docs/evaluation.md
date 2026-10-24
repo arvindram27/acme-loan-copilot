@@ -118,10 +118,13 @@ not repeated until it passed.
 
 ### Hash scheme (`sha256-lf-v1`)
 
-Hashing the bytes as read from disk is checkout-dependent: this repository uses
-`core.autocrlf=true`, and Python's text-mode writes (`Path.write_text`) emit CRLF
-on Windows. The same committed content can therefore be LF in git and CRLF on
-disk, and a raw SHA-256 differs between them.
+Two different mechanisms can make the bytes on disk differ from the bytes in git:
+a CRLF checkout (this working copy has `core.autocrlf=true`), and Python's
+text-mode writes (`Path.write_text`), which emit CRLF on Windows when an artifact
+is generated. The JSON evidence files illustrate the second: the scripts wrote
+them on Windows and they were committed as LF, so the working copy holds CRLF
+while the blob holds LF. Either way the content is identical and only the raw
+SHA-256 differs.
 
 The v2 regrade artifact is an instance: its `source_artifact_sha256` is
 `db389a25…`, which is the SHA-256 of the **CRLF working-copy bytes** of
@@ -138,7 +141,7 @@ the hash was simply not portable.
   change the hash.
 - The **raw-byte** hash is kept separately as `raw_sha256`. It answers a
   different question ("are these the exact bytes on this machine?") and is
-  expected to vary with the checkout.
+  expected to vary with the checkout and with how the file was written.
 
 Historical artifacts are **not** rewritten and their fields keep their original
 meaning: in `heldout-regrade-v2.json`, `source_artifact_sha256` is the raw-byte
@@ -158,12 +161,19 @@ The old flat field names are retired rather than reinterpreted. To verify a
 historical artifact across checkouts, compare `normalized_sha256` against the git
 blob's SHA-256:
 
-| file | raw (this CRLF checkout) | normalised (= git blob) |
+| file | raw (as observed on the 2026-10-24 Windows working copy) | normalised (= git blob) |
 |---|---|---|
 | `docs/evidence/heldout-frozen.json` | `db389a25…` | `247697e0…` |
 | `docs/evidence/heldout-regrade-v2.json` | `499af86b…` | `875062d9…` |
 | `docs/evidence/heldout-regression-v2.json` | `a3332723…` | `570ccf60…` |
 | `scripts/heldout_frozen.py` | `c83d4cfd…` | `c83d4cfd…` |
+
+The raw column is a snapshot of one machine, not a property of the file: the
+three JSON artifacts were written in text mode (CRLF), while
+`scripts/heldout_frozen.py` was authored with LF, so its raw hash happens to
+equal its normalised hash. A checkout that renders that script as CRLF would give
+`3efb6d81…`. Only the normalised column is stable across checkouts — that is the
+value to compare.
 
 Offline tests (`tests/test_evidence_hash.py`) pin the scheme: LF and CRLF forms of
 identical content hash the same, a content change hashes differently, raw hashes
