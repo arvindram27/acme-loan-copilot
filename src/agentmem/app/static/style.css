@@ -40,7 +40,7 @@ body {
   gap: 20px;
 }
 
-.main { padding: 34px 44px 120px; max-width: 1120px; }
+.main { padding: 34px 44px 120px; max-width: 1120px; margin: 0 auto; }
 
 /* ------------------------------------------------------------------ brand */
 .brand {
