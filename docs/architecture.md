@@ -78,3 +78,18 @@ flowchart LR
     C1 --> SHARED[shared: KB, tools, extraction, context assembly]
     C2 --> SHARED
 ```
+
+## Unit of work
+
+The **caller owns the commit boundary**. Units never call `conn.commit()` or
+`conn.rollback()` directly; every write goes through `with conn.transaction():`,
+which is a savepoint when an outer transaction already exists and a real
+transaction otherwise. So:
+
+- a single unit write (`entity.write_fact`, `persona.update`) is atomic on its own;
+- a caller can group several writes into one atomic unit by wrapping them in
+  `with conn.transaction():` — the nested unit blocks become savepoints and a
+  failure rolls the whole group back;
+- no unit can commit an outer transaction early.
+
+Enforced by convention: `grep -r "conn.commit()" src/agentmem/units` must be empty.

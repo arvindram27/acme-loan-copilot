@@ -193,18 +193,20 @@ class MemoryAgent:
                 )
 
         # Extraction BEFORE context assembly: if the user corrects a fact in
-        # this very turn, the answer already reflects the new value.
+        # this very turn, the answer already reflects the new value. The LLM
+        # call itself is inside the flag, not just the write.
         facts_written = 0
         dropped: list = []
-        raw, _model = extract.extract_facts(self.chat, text)
-        if self.extract_turns and raw:
-            valid, dropped = extract.validate_facts(raw)
-            if valid:
-                written = extract.write_validated(
-                    conn, user_id=self.user_id, thread_id=thread_id,
-                    facts=valid,
-                )
-                facts_written = sum(1 for w in written if w["changed"])
+        if self.extract_turns:
+            raw, _model = extract.extract_facts(self.chat, text)
+            if raw:
+                valid, dropped = extract.validate_facts(raw)
+                if valid:
+                    written = extract.write_validated(
+                        conn, user_id=self.user_id, thread_id=thread_id,
+                        facts=valid,
+                    )
+                    facts_written = sum(1 for w in written if w["changed"])
 
         persona_text = persona.format_persona(persona.read_active(conn, self.user_id))
 

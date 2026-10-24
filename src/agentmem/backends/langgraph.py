@@ -113,13 +113,15 @@ class LangGraphAgent:
         seq = len(messages)  # 1-based count incl. the just-added user turn
 
         # Extraction BEFORE context: a correction in this turn is reflected.
+        # The LLM call sits inside the flag, so "off" really means off.
         facts_written = 0
         dropped: list = []
-        raw, _ = extract.extract_facts(self.chat, text)
-        if self.extract_turns and raw:
-            valid, dropped = extract.validate_facts(raw)
-            if valid:
-                facts_written = self._write_facts(valid)
+        if self.extract_turns:
+            raw, _ = extract.extract_facts(self.chat, text)
+            if raw:
+                valid, dropped = extract.validate_facts(raw)
+                if valid:
+                    facts_written = self._write_facts(valid)
 
         persona_text = persona.format_persona(self._get_persona())
 

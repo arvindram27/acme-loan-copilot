@@ -94,13 +94,18 @@ def update(
     *,
     change_trigger: str = "user_request",
 ) -> dict:
-    """Supersede the active version and insert a new one, in one transaction."""
-    cur = conn.execute(
-        "SELECT COALESCE(MAX(version), 0) FROM mem.persona WHERE user_id = %s",
-        (user_id,),
-    )
-    version = int(cur.fetchone()[0]) + 1
-    try:
+    """Supersede the active version and insert a new one in one unit of work.
+
+    Uses `with conn.transaction()` (a savepoint when an outer transaction
+    exists) instead of a manual commit, so it participates in the caller's
+    unit of work rather than committing it early. See docs/architecture.md.
+    """
+    with conn.transaction():
+        cur = conn.execute(
+            "SELECT COALESCE(MAX(version), 0) FROM mem.persona WHERE user_id = %s",
+            (user_id,),
+        )
+        version = int(cur.fetchone()[0]) + 1
         conn.execute(
             """
             UPDATE mem.persona
@@ -118,10 +123,6 @@ def update(
             (user_id, version, change_trigger, json.dumps(body)),
         )
         persona_id, new_version, trigger, new_body = cur.fetchone()
-        conn.commit()
-    except psycopg.Error:
-        conn.rollback()
-        raise
     return {
         "persona_id": persona_id,
         "version": new_version,
