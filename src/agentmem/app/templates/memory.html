@@ -2,8 +2,11 @@
 {% set active = "memory" %}
 {% block title %}Memory — {{ user_id }}{% endblock %}
 {% block content %}
-<h1>Memory inspector</h1>
-<form method="get" action="/memory" class="inline-form">
+<p class="kicker">Tools</p>
+<h1>Memory inspector.</h1>
+<p class="lede">Everything the scratch backend holds for one user, in one place.</p>
+
+<form method="get" action="/memory" class="flex" style="margin: 12px 0;">
   <label>User <input name="user_id" value="{{ user_id }}"></label>
   <button type="submit">Inspect</button>
 </form>
@@ -11,18 +14,20 @@
 <section>
   <h2>Persona</h2>
   {% if persona %}
-  <p class="muted">version {{ persona[0] }} · {{ persona[1] }}</p>
+  <p class="muted small">version {{ persona[0] }} · {{ persona[1] }}</p>
   <pre>{{ persona[2] }}</pre>
   {% else %}<p class="muted">none</p>{% endif %}
 </section>
 
 <section>
-  <h2>Entity facts (current)</h2>
+  <h2>Entity facts</h2>
   {% if facts %}
   <table>
-    <tr><th>kind</th><th>name</th><th>attr</th><th>value</th></tr>
-    {% for kind, name, attr, value in facts %}
-    <tr><td>{{ kind }}</td><td>{{ name }}</td><td>{{ attr }}</td><td>{{ value }}</td></tr>
+    <tr><th>kind</th><th>name</th><th>attr</th><th>value</th><th>status</th></tr>
+    {% for kind, name, attr, value, status in facts %}
+    <tr><td>{{ kind }}</td><td>{{ name }}</td><td>{{ attr }}</td>
+        <td class="{{ 'strike' if status == 'superseded' }}">{{ value }}</td>
+        <td class="mono small muted">{{ status }}</td></tr>
     {% endfor %}
   </table>
   {% else %}<p class="muted">none</p>{% endif %}
@@ -59,18 +64,6 @@
     <tr><th>thread</th><th>question</th><th>answer</th></tr>
     {% for thread_id, question, answer, _ in cache_rows %}
     <tr><td>{{ thread_id }}</td><td class="wrap">{{ question }}</td><td class="wrap">{{ answer }}</td></tr>
-    {% endfor %}
-  </table>
-  {% else %}<p class="muted">none</p>{% endif %}
-</section>
-
-<section>
-  <h2>Tool log (recent)</h2>
-  {% if tool_rows %}
-  <table>
-    <tr><th>tool</th><th>source</th><th>args</th><th>bytes</th></tr>
-    {% for name, source, args, bytes_, _ in tool_rows %}
-    <tr><td>{{ name }}</td><td>{{ source }}</td><td class="wrap">{{ args }}</td><td>{{ bytes_ }}</td></tr>
     {% endfor %}
   </table>
   {% else %}<p class="muted">none</p>{% endif %}

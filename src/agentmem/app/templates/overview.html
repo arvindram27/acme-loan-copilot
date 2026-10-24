@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% set active = "overview" %}
+{% block title %}Acme Loan Copilot — Memory Ladder{% endblock %}
+{% block content %}
+<p class="kicker">Eight memory capabilities, one mortgage application</p>
+<h1>Memory built twice,<br>and measured.</h1>
+<p class="lede">
+  The same loan-officer copilot, assembled rung by rung. Each rung adds one
+  memory capability — a place to put things, and a rule for reading them back.
+  The ladder ends where the question gets answered twice: hand-rolled SQL on
+  Postgres, and again through LangGraph's store, graded side by side.
+</p>
+
+<div class="ladder">
+  {% for r in rungs %}
+  <a class="rung" href="/rung/{{ r.n }}">
+    <span class="num">{{ '%02d'|format(r.n) }}</span>
+    <span class="body">
+      <span class="t">{{ r.title }}</span>
+      <span class="d">{{ r.lede }}</span>
+      <span class="meta">
+        {% if r.pill %}<span class="pill {{ r.pill }}">{{ r.pill }}</span>{% endif %}
+        {% if r.table %}<span class="tbl">{{ r.table }}</span>{% endif %}
+      </span>
+    </span>
+    <span class="mono muted small">→</span>
+  </a>
+  {% endfor %}
+  <a class="rung" href="/evals">
+    <span class="num">08</span>
+    <span class="body">
+      <span class="t">Measure</span>
+      <span class="d">Grade every answer against constructed labels; compare the two backends on accuracy, latency and tokens.</span>
+      <span class="meta"><span class="pill measure">the verdict</span><span class="tbl">mem.eval_run · mem.grade</span></span>
+    </span>
+    <span class="mono muted small">→</span>
+  </a>
+</div>
+
+<hr class="rule">
+<p class="muted small">
+  Start at <a href="/chat">the copilot</a> to talk to it, or open any rung to see its live data.
+  Every number in the memory panel is real — tokens, turns, facts, summaries and cache hits are read from the store, not illustrated.
+</p>
+{% endblock %}

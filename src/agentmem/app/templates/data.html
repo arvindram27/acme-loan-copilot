@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% set active = "data" %}
-{% block title %}Data explorer{% endblock %}
+{% block title %}Data explorer — Acme Loan Copilot{% endblock %}
 {% block content %}
-<h1>Data explorer</h1>
-<p class="muted">Tables in the <code>mem</code> schema (scratch backend).</p>
+<p class="kicker">Tools</p>
+<h1>Data explorer.</h1>
+<p class="lede">Every table in the scratch <code>mem</code> schema. The LangGraph backend keeps its memory in its own store and checkpointer tables instead.</p>
 
-<div class="table-list">
+<div class="chips">
   {% for t in tables %}
-  <a href="/data?table={{ t }}" class="chip {{ 'chip-on' if t == table }}">{{ t }}</a>
+  <a href="/data?table={{ t }}" class="chip {{ 'on' if t == table }}">{{ t }}</a>
   {% endfor %}
 </div>
 
@@ -20,7 +21,7 @@
   <tr>{% for v in row %}<td class="wrap">{{ v }}</td>{% endfor %}</tr>
   {% endfor %}
 </table>
-<p class="muted">{{ rows|length }} rows (limit 50).</p>
+<p class="muted small">{{ rows|length }} rows (limit 50).</p>
 {% else %}
 <p class="muted">No rows.</p>
 {% endif %}

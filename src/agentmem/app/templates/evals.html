@@ -1,27 +1,40 @@
 {% extends "base.html" %}
-{% set active = "evals" %}
-{% block title %}Evaluation runs{% endblock %}
+{% set active = "measure" %}
+{% block title %}Measure — Acme Loan Copilot{% endblock %}
 {% block content %}
-<h1>Evaluation runs</h1>
+<p class="kicker">Rung 08</p>
+<h1>Measure.</h1>
+<p class="lede">
+  Every answer is graded against constructed labels, and the two backends are
+  compared on accuracy, latency and tokens. A run executes the 32-turn workload
+  through one backend and records each item and grade.
+</p>
+
+<div class="card">
+  <h2>Run the workload</h2>
+  <p class="muted">From the shell: <code>uv run python scripts/run_eval.py --backend memory,langgraph,baseline</code></p>
+  <p class="muted small">memory ≈ scratch · langgraph ≈ LangGraph store · baseline ≈ no memory.</p>
+</div>
 
 {% if runs %}
+<h2>Runs</h2>
 <table>
   <tr><th>run</th><th>backend</th><th>workload</th><th>n</th><th>accuracy</th><th>op_score</th><th>jev $</th><th>finished</th></tr>
   {% for r in runs %}
   <tr>
-    <td><a href="/evals/{{ r[0] }}">{{ r[0] }}</a></td>
-    <td>{{ r[1] }}</td>
+    <td><a href="/evals/{{ r[0] }}">#{{ r[0] }}</a></td>
+    <td class="mono">{{ r[1] }}</td>
     <td>{{ r[3] }}</td>
     <td>{{ r[4] }}</td>
     {% set m = r[5] or {} %}
-    <td>{{ '%.2f'|format(m.get('accuracy', 0)) if m.get('accuracy') is not none else '—' }}</td>
-    <td>{{ '%.2f'|format(m.get('op_score', 0)) if m.get('op_score') is not none else '—' }}</td>
-    <td>{{ r[6] }}</td>
-    <td>{{ r[8] }}</td>
+    <td class="mono">{{ '%.2f'|format(m.get('accuracy', 0)) if m.get('accuracy') is not none else '—' }}</td>
+    <td class="mono">{{ '%.2f'|format(m.get('op_score', 0)) if m.get('op_score') is not none else '—' }}</td>
+    <td class="mono">{{ r[6] }}</td>
+    <td class="small muted">{{ r[8] }}</td>
   </tr>
   {% endfor %}
 </table>
 {% else %}
-<p class="muted">No runs yet — try <code>python scripts/run_eval.py</code>.</p>
+<p class="muted">No runs yet — run <code>uv run python scripts/run_eval.py</code>.</p>
 {% endif %}
 {% endblock %}

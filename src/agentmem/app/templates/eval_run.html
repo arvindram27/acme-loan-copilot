@@ -1,22 +1,23 @@
 {% extends "base.html" %}
-{% set active = "evals" %}
-{% block title %}Eval run #{{ run[0] if run else '' }}{% endblock %}
+{% set active = "measure" %}
+{% block title %}Run #{{ run[0] if run else '' }} — Acme Loan Copilot{% endblock %}
 {% block content %}
 {% if run %}
-<h1>Run #{{ run[0] }} <span class="muted">({{ run[1] }} · {{ run[3] }} · n={{ run[4] }})</span></h1>
-<p class="muted">model {{ run[2] }} · jev cost ${{ run[6] }} · {{ run[7] }} → {{ run[8] }}</p>
+<p class="kicker">Evaluation run</p>
+<h1>Run #{{ run[0] }} <span class="muted small">({{ run[1] }} · {{ run[3] }} · n={{ run[4] }})</span></h1>
+<p class="muted small">model {{ run[2] }} · jev cost ${{ run[6] }} · {{ run[7] }} → {{ run[8] }}</p>
 {% else %}
 <h1>Run not found</h1>
 <p class="muted">No evaluation run with that id.</p>
 {% endif %}
 
 {% for it in items %}
-<article class="item">
+<article class="card">
   <h2>#{{ it.item_no }} — {{ it.user_id }} / {{ it.thread_id }}</h2>
-  <p class="q">{{ it.question }}</p>
-  <div class="answer"><strong>answer</strong><p>{{ it.answer }}</p></div>
+  <p class="muted">{{ it.question }}</p>
+  <div class="turn assistant"><span class="who">answer</span><p>{{ it.answer }}</p></div>
   <details>
-    <summary>expected labels</summary>
+    <summary class="muted small">expected labels</summary>
     <pre>{{ it.expected }}</pre>
   </details>
   {% if it.grades %}
@@ -24,10 +25,10 @@
     <tr><th>grader</th><th>check</th><th>pass</th><th>score</th><th>esc</th><th>rationale</th></tr>
     {% for _n, grader, check, pass_, score, prob, esc, rationale in it.grades %}
     <tr>
-      <td>{{ grader }}</td><td>{{ check }}</td>
-      <td>{{ pass_ }}</td><td>{{ score }}</td>
-      <td>{{ '↑' if esc else '' }}</td>
-      <td class="wrap">{{ rationale }}</td>
+      <td class="mono">{{ grader }}</td><td class="mono">{{ check }}</td>
+      <td class="mono">{{ pass_ }}</td><td class="mono">{{ score }}</td>
+      <td class="mono">{{ '↑' if esc else '' }}</td>
+      <td class="wrap small">{{ rationale }}</td>
     </tr>
     {% endfor %}
   </table>

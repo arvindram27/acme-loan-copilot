@@ -7,17 +7,54 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header class="topbar">
-    <span class="brand">Acme&nbsp;Home&nbsp;Loans — Copilot</span>
-    <nav>
-      <a href="/chat" class="{{ 'active' if active == 'chat' }}">Chat</a>
-      <a href="/memory" class="{{ 'active' if active == 'memory' }}">Memory</a>
-      <a href="/data" class="{{ 'active' if active == 'data' }}">Data</a>
-      <a href="/evals" class="{{ 'active' if active == 'evals' }}">Evals</a>
-    </nav>
-  </header>
-  <main>
-    {% block content %}{% endblock %}
-  </main>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Acme&nbsp;Home&nbsp;Loans<span class="rule-line">.</span>
+        <span class="sub">Memory ladder</span>
+      </div>
+
+      <nav class="nav">
+        <div class="group">Ladder</div>
+        <a href="/" class="{{ 'active' if active == 'overview' }}"><span class="n">◎</span>Overview</a>
+        <a href="/chat" class="{{ 'active' if active == 'chat' }}"><span class="n">▸</span>Copilot</a>
+        {% for r in rungs %}
+        <a href="/rung/{{ r.n }}" class="{{ 'active' if active == 'rung-' ~ r.n }}">
+          <span class="n">{{ '%02d'|format(r.n) }}</span>{{ r.title }}
+        </a>
+        {% endfor %}
+        <a href="/evals" class="{{ 'active' if active == 'measure' }}"><span class="n">08</span>Measure</a>
+        <div class="group">Tools</div>
+        <a href="/data" class="{{ 'active' if active == 'data' }}"><span class="n">▤</span>Data explorer</a>
+        <a href="/memory" class="{{ 'active' if active == 'memory' }}"><span class="n">▦</span>Memory inspector</a>
+      </nav>
+
+      <div class="status">
+        <h4>Status</h4>
+        <div class="row"><span class="k">model</span><span class="v">{{ model }}</span></div>
+        <div class="row"><span class="k">memory</span><span class="v">Postgres + pgvector</span></div>
+        <div class="row"><span class="k">backends</span><span class="v">scratch · langgraph</span></div>
+        <div class="row"><span class="k">eval</span><span class="v"><span class="dot">●</span> live</span></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <div class="drawer" id="drawer">
+    <div class="bar" onclick="document.getElementById('drawer').classList.toggle('open')">
+      <span class="mono strong">DATA EXPLORER</span>
+      <span class="stat"><b>{{ drawer.tables }}</b><span>tables</span></span>
+      <span class="stat"><b>{{ drawer.rows }}</b><span>rows</span></span>
+      <span class="stat"><span>postgres · pgvector</span></span>
+      <span class="spacer"></span>
+      <span class="mono">{{ '▴' }}</span>
+    </div>
+    <div class="body">
+      <a class="chip" href="/data">Open data explorer →</a>
+      <span class="muted small">The drawer reflects the scratch <code>mem</code> schema. The LangGraph backend keeps its memory in its own store/checkpointer tables.</span>
+    </div>
+  </div>
 </body>
 </html>

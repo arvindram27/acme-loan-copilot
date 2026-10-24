@@ -210,6 +210,7 @@ class LangGraphAgent:
                 for t in tool_outcomes
             ],
             tokens=out.total_tokens,
+            prompt_tokens=out.prompt_tokens,
             context_tokens=assembled.context_tokens,
             summary_used=False,
             summary_turns=0,

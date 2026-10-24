@@ -84,6 +84,7 @@ class TurnOutcome:
     tool_calls: list = field(default_factory=list)       # name/source/bytes meta
     tool_results: list = field(default_factory=list)     # full results, for grading
     tokens: int = 0
+    prompt_tokens: int = 0            # real prompt tokens of the final completion
     answer_cache_hit: bool = False    # served from mem.cache (no completion)
     context_tokens: int = 0           # estimated prompt tokens (system+messages)
     summary_used: bool = False        # a working-memory summary was in context
@@ -321,6 +322,7 @@ class MemoryAgent:
                 for t in tool_outcomes
             ],
             tokens=out.total_tokens,
+            prompt_tokens=out.prompt_tokens,
             context_tokens=assembled.context_tokens,
             summary_used=assembled.summary_used,
             summary_turns=(

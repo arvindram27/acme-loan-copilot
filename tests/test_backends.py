@@ -40,6 +40,7 @@ class FakeChat:
         system = messages[0]["content"] if messages else ""
         class R:
             total_tokens = 7
+            prompt_tokens = 4
         r = R()
         if "Extract factual statements" in system:
             r.text = '{"facts": []}'

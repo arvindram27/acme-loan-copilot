@@ -1,46 +1,117 @@
 {% extends "base.html" %}
 {% set active = "chat" %}
-{% block title %}Chat — Acme Loan Copilot{% endblock %}
+{% block title %}Copilot — Acme Loan Copilot{% endblock %}
 {% block content %}
-<h1>Chat</h1>
-<p class="muted">Ask the copilot. Scope (user / thread) is set by you here, never by the model.</p>
+<p class="kicker">Copilot</p>
+<h1>Talk to the copilot.</h1>
+<p class="lede">Scope (user / thread) is set by you, never by the model. Watch the memory panel on the right as each answer is assembled.</p>
 
-<form method="post" action="/chat" class="chat-form">
+<form method="post" action="/chat" class="chat-form card">
   <div class="row">
     <label>User <input name="user_id" value="{{ user_id }}"></label>
     <label>Thread <input name="thread_id" value="{{ thread_id }}"></label>
+    <label>Backend
+      <select name="backend">
+        <option value="scratch" {{ 'selected' if backend == 'scratch' }}>scratch (SQL)</option>
+        <option value="langgraph" {{ 'selected' if backend == 'langgraph' }}>langgraph</option>
+      </select>
+    </label>
   </div>
   <label>Message
-    <textarea name="message" rows="2" placeholder="e.g. What is my maximum qualifying payment?" autofocus></textarea>
+    <textarea name="message" rows="2" placeholder="e.g. What is the most I could pay each month under Acme's DTI limit?" autofocus></textarea>
   </label>
   <button type="submit">Send</button>
 </form>
 
 {% if error %}<p class="error">{{ error }}</p>{% endif %}
 
-{% if last %}
-<div class="answer">
-  <strong>Copilot</strong>
-  <p>{{ last.text }}</p>
-  <div class="muted small">
-    context {{ last.context_tokens }} tok · {{ last.recent_turns }} recent ·
-    {{ last.recalled_turns }} recalled · {{ 'summary' if last.summary_used else 'no summary' }}
-    · {{ last.tokens }} completion tokens
-  </div>
-</div>
-{% endif %}
+<div class="chat-grid">
+  <section>
+    <h2>Conversation</h2>
+    {% if history %}
+    <div class="thread">
+      {% for m in history %}
+      <div class="turn {{ m.role }}">
+        <span class="who">{{ 'You' if m.role == 'user' else 'Copilot' }}</span>
+        <p>{{ m.content }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted">Nothing yet in thread “{{ thread_id }}” on the {{ backend }} backend.</p>
+    {% endif %}
+  </section>
 
-{% if history %}
-<h2>Thread “{{ thread_id }}”</h2>
-<div class="thread">
-  {% for m in history %}
-  <div class="turn {{ m.role }}">
-    <span class="who">{{ 'You' if m.role == 'user' else 'Copilot' }}</span>
-    <p>{{ m.content }}</p>
-  </div>
-  {% endfor %}
+  <aside class="memory-panel">
+    <div class="panel">
+      <h3>The memory</h3>
+      <span class="badge {{ '' if panel.latest else 'off' }}">{{ backend }}</span>
+      {% if panel.latest and panel.latest.answer_cache_hit %}<span class="badge">cache hit</span>{% endif %}
+    </div>
+
+    {% if panel.latest %}
+    <div class="panel">
+      <h3>Token budget</h3>
+      <div class="meter"><span style="width: {{ [100, (panel.latest.prompt_tokens / panel.max_tokens * 100)|round]|min }}%"></span></div>
+      <div class="meter-label">
+        <span>{{ panel.latest.prompt_tokens }} prompt tokens</span>
+        <span>{{ panel.max_tokens }} ceiling</span>
+      </div>
+      <p class="muted small">real prompt tokens of the final completion.</p>
+    </div>
+
+    <div class="panel">
+      <h3>Sent to the model</h3>
+      <div class="detail-list">
+        <div class="kv"><span class="k">verbatim turns</span><span class="v">{{ panel.latest.recent_turns }}</span></div>
+        <div class="kv"><span class="k">recalled</span><span class="v">{{ panel.latest.recalled_turns }}</span></div>
+        <div class="kv"><span class="k">summary</span><span class="v">{{ 'yes — %d turns folded'|format(panel.latest.summary_turns) if panel.latest.summary_used else 'no' }}</span></div>
+        <div class="kv"><span class="k">policy excerpts</span><span class="v">{{ panel.latest.retrieved_refs|length }}</span></div>
+        <div class="kv"><span class="k">completion</span><span class="v">{{ panel.latest.tokens }} tokens</span></div>
+      </div>
+    </div>
+
+    {% if panel.latest.facts_used %}
+    <div class="panel">
+      <h3>Facts used</h3>
+      {% for name, kv in panel.latest.facts_used.items() %}
+        {% for k, v in kv.items() %}
+        <div class="fact"><span class="k">{{ '' if name == 'you' else name + ' ' }}{{ k }}</span><span>{{ v }}</span></div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if panel.latest.retrieved_refs %}
+    <div class="panel">
+      <h3>Cited policy</h3>
+      {% for t in panel.latest.retrieved_refs %}<div class="fact"><span class="k">{{ t }}</span></div>{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if panel.latest.tools %}
+    <div class="panel">
+      <h3>Tools</h3>
+      {% for i in range(panel.latest.tools|length) %}
+      <div class="fact"><span class="k">{{ panel.latest.tools[i] }}</span><span>{{ panel.latest.tool_sources[i] }}</span></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="panel"><p class="muted small">Send a message to see how memory assembles the answer.</p></div>
+    {% endif %}
+
+    {% if panel.chart %}
+    <div class="panel">
+      <h3>Per-turn prompt tokens</h3>
+      <div class="barchart">
+        {% for c in panel.chart %}
+        <div class="bar {{ 'cache' if c.cache }}" title="turn {{ c.seq }}: {{ c.pt }} tokens" style="height: {{ [2, (c.pt / panel.max_tokens * 100)]|max }}%"></div>
+        {% endfor %}
+      </div>
+      <div class="meter-label"><span>older</span><span>latest</span></div>
+    </div>
+    {% endif %}
+  </aside>
 </div>
-{% else %}
-<p class="muted">No conversation yet in this thread.</p>
-{% endif %}
 {% endblock %}

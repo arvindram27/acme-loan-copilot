@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ rung.title if rung else 'Rung' }} — Acme Loan Copilot{% endblock %}
+{% block content %}
+{% if rung %}
+<p class="kicker">Rung {{ '%02d'|format(rung.n) }}</p>
+<h1>{{ rung.title }}</h1>
+<div class="flex">
+  {% if rung.pill %}<span class="pill {{ rung.pill }}">{{ rung.pill }}</span>{% endif %}
+  {% if rung.table %}<span class="mono small muted">{{ rung.table }}</span>{% endif %}
+</div>
+<p class="lede">{{ rung.lede }}</p>
+
+<div class="card">
+  <h2>What it is</h2>
+  <div class="detail-list">
+    <div class="kv"><span class="k">stores</span><span class="v">{{ rung.stores }}</span></div>
+    <div class="kv"><span class="k">when to use</span><span class="v">{{ rung.when }}</span></div>
+    <div class="kv"><span class="k">not for</span><span class="v">{{ rung.notfor }}</span></div>
+  </div>
+</div>
+
+{% if rung.demo %}
+<div class="card">
+  <h2>Try it</h2>
+  <p class="muted">{{ rung.demo_note }}</p>
+  <form method="post" action="/chat" class="chat-form">
+    <input type="hidden" name="user_id" value="maya">
+    <input type="hidden" name="thread_id" value="a">
+    <input type="hidden" name="message" value="{{ rung.demo }}">
+    <button type="submit">Ask “{{ rung.demo }}”</button>
+  </form>
+</div>
+{% endif %}
+
+<h2>Live data</h2>
+{% if live.kind == 'turns' %}
+  <table><tr><th>thread</th><th>seq</th><th>role</th><th>content</th></tr>
+  {% for r in live.rows %}<tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td><td class="wrap">{{ r[3] }}</td></tr>{% endfor %}</table>
+{% elif live.kind == 'persona' %}
+  {% if live.persona %}<p class="muted small">version {{ live.persona[0] }} · {{ live.persona[1] }}</p><pre>{{ live.persona[2] }}</pre>{% else %}<p class="muted">no active persona.</p>{% endif %}
+{% elif live.kind == 'facts' %}
+  <table><tr><th>kind</th><th>name</th><th>attr</th><th>value</th><th>status</th></tr>
+  {% for r in live.rows %}
+  <tr>
+    <td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td>
+    <td class="{{ 'strike' if r[4] == 'superseded' }}">{{ r[3] }}</td>
+    <td class="mono small muted">{{ r[4] }}</td>
+  </tr>
+  {% endfor %}</table>
+  <p class="muted small">Superseded values are struck through — they survive for audit, but only the active one is read.</p>
+{% elif live.kind == 'chunks' %}
+  <table><tr><th>doc</th><th>§</th><th>text</th></tr>
+  {% for r in live.rows %}<tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td class="wrap">{{ r[2] }}</td></tr>{% endfor %}</table>
+{% elif live.kind == 'tools' %}
+  <table><tr><th>tool</th><th>source</th><th>args</th><th>bytes</th></tr>
+  {% for r in live.rows %}<tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td class="wrap">{{ r[2] }}</td><td>{{ r[3] }}</td></tr>{% endfor %}</table>
+{% elif live.kind == 'summaries' %}
+  <table><tr><th>thread</th><th>version</th><th>through</th><th>summary</th></tr>
+  {% for r in live.rows %}<tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td><td class="wrap">{{ r[3] }}</td></tr>{% endfor %}</table>
+{% elif live.kind == 'cache' %}
+  <table><tr><th>thread</th><th>question</th><th>answer</th><th>epoch</th></tr>
+  {% for r in live.rows %}<tr><td>{{ r[0] }}</td><td class="wrap">{{ r[1] }}</td><td class="wrap">{{ r[2] }}</td><td>{{ r[3] }}</td></tr>{% endfor %}</table>
+{% else %}
+  <p class="muted">No live rows (rung 0 stores nothing).</p>
+{% endif %}
+{% else %}
+<h1>Rung not found</h1>
+<p class="muted">There is no rung with that number.</p>
+{% endif %}
+{% endblock %}
