@@ -50,6 +50,7 @@ def main() -> int:
         "jev_model": s.jev_model,
         "workload": "workload_v1",
         "workload_sha256": _hash(WORKLOAD_V1),
+        "prompt_version": "prompts-v1",
         "repeat_count": 1,
         "cache_state": "cold (each backend's demo users are reset before a run)",
         "authority_rule": ("per check: highest kappa >= 0.6 wins; ties to the "

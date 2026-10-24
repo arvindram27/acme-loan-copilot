@@ -1,12 +1,13 @@
 {
   "_meta": {
-    "generated_at": "2026-10-24T14:16:29.734205+00:00",
-    "commit": "d937a1c5248fe3666be2d321043a90705eab8e50",
+    "generated_at": "2026-10-24T15:31:55.451735+00:00",
+    "commit": "71dfaebc4435d7beb2715fd193e6b9d3e7483f79",
     "chat_model": "gpt-4o-mini",
     "judge_model": "gpt-4o",
     "jev_model": "jev-latest",
     "workload": "workload_v1",
     "workload_sha256": "e3e5b15eb61cf9d097f91f47cdc8262eda29394a70a910f3f5d9aab1c6439484",
+    "prompt_version": "prompts-v1",
     "repeat_count": 1,
     "cache_state": "cold (each backend's demo users are reset before a run)",
     "authority_rule": "per check: highest kappa >= 0.6 wins; ties to the cheaper grader; below 0.6 stays unvalidated",

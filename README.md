@@ -79,9 +79,14 @@ Artifacts with commit, model IDs, workload hash, denominators and CIs live in
 
 | backend | n | accuracy (95% CI) | op_score (95% CI) | p50 | note |
 |---|---|---|---|---|---|
-| memory (scratch) | 32 | **1.00** (0.89–1.00) | **1.00** (0.78–1.00) | ~4.1s | + summaries + semantic cache |
-| langgraph | 32 | **1.00** (0.89–1.00) | **1.00** (0.78–1.00) | ~3.6s | equivalent on the memory promises |
+| memory (scratch) | 32 | **1.00** (0.89–1.00) | **1.00** (0.78–1.00) | ~4.2s | + summaries + semantic cache |
+| langgraph | 32 | **1.00** (0.89–1.00) | **1.00** (0.78–1.00) | ~3.2s | equivalent on the memory promises |
 | baseline | 32 | 0.28 (0.16–0.45) | 0.14 | ~1.2s | no memory at all |
+
+Measured at commit `71dfaeb`; artifacts with commit, model IDs, workload hash,
+denominators and CIs live in [`docs/evidence/`](docs/evidence/). A held-out check
+(`scripts/heldout_check.py`, 5 fresh questions not in the workload) also passes 5/5,
+so the supersession guard is not tuned only to the 32-item set.
 
 At n=32 a 1.00 has a Wilson lower bound of 0.89 — the interval is the honest number.
 Per-category (memory, passed/n): tool 5/5 · scope 2/2 · setup 3/3 · recall 7/7 ·
