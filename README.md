@@ -95,7 +95,9 @@ denominators and CIs live in [`docs/evidence/`](docs/evidence/).
 - **Scorer v2** — `heldout-scorer-v2` additionally requires the seven-day period
   for the rate-lock question. The saved v1 answers re-scored under it: 5/5
   ([regrade](docs/evidence/heldout-regrade-v2.json), no model calls); the five
-  known questions re-run once under it: see the regression artifact.
+  known questions re-run once under it: 5/5
+  ([regression](docs/evidence/heldout-regression-v2.json), 25 chat calls,
+  18,011 tokens, ~$0.003). Neither replaces the v1 result.
 - `scripts/heldout_check.py` — 5 earlier fresh questions, also 5/5.
 
 The commit order records a *freeze-before-run* order; it cannot prove there were

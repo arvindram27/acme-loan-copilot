@@ -101,6 +101,21 @@ number and citation are present.
 
 Result of v1: 5/5 (`docs/evidence/heldout-frozen.json`), unchanged.
 
+Under scorer v2, reported separately and never merged into v1:
+
+| artifact | what it is | result |
+|---|---|---|
+| `heldout-frozen.json` | v1 run, scorer v1 (frozen) | 5/5, author-reported |
+| `heldout-regrade-v2.json` | saved v1 answers re-scored, no model calls | 5/5 (v1 5/5 → v2 5/5) |
+| `heldout-regression-v2.json` | the same 5 known questions, one run, scorer v2 | 5/5 |
+
+The regression run used the same configuration as v1 (`gpt-4o-mini` +
+`text-embedding-3-small`, checked before running), took 25 chat calls and 18,011
+tokens, and cost an estimated $0.003 (chat only, gpt-4o-mini list price;
+embeddings excluded). No failure occurred, so — as with v1 — the
+retain-failures rule was again not exercised. The run was executed once; it was
+not repeated until it passed.
+
 ### What the freeze does and does not establish
 
 Be precise about the claim:

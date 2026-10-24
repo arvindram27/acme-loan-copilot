@@ -1,0 +1,8 @@
+id               result  calls  tokens  answer
+h1-tool          PASS    4      2805    With your monthly income of $7,400 and your car payment of $900, the m
+h2-rag-ltv       PASS    5      3602    For a two-unit owner-occupied property, Acme's maximum loan-to-value (
+h3-rag-lock      PASS    6      5119    If your rate lock expires and you extend it beyond the grace period, i
+h4-supersede     PASS    3      2133    Your income on file is $8,100 per month.
+h5-cross-thread  PASS    3      1770    Your monthly income is $8,100, and your monthly debts are $900.
+
+5/5 passed under heldout-scorer-v2
