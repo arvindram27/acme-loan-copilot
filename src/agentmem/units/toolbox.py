@@ -289,6 +289,108 @@ def planner_payload(*, question: str, facts: dict, results_so_far: list) -> str:
     })
 
 
+def run_tool_loop(
+    conn,
+    *,
+    user_id: str,
+    thread_id: str,
+    chat,
+    messages: list[dict],
+    text: str,
+    query_vec,
+    facts: dict,
+    use_tools: bool = True,
+    tool_rounds: int = 3,
+) -> list[dict]:
+    """Plan/run tool calls until the planner says answer or rounds run out.
+
+    Shared by both backends: the toolbox is deterministic application logic,
+    not the memory store being contrasted. Rules: the planner computes nothing
+    itself; tool results arrive as user-role blocks labeled fresh/cache; each
+    result is logged to mem.tool_call with its args hash so reuse is real.
+    """
+    outcomes: list[dict] = []
+    seen_hashes: set[str] = set()
+    menu = ""
+    if use_tools:
+        found = search_tools(conn, query_vec, k=4)
+        menu = "\n".join(
+            f"[{t['name']}] {t['description']} "
+            f"params: {json.dumps(t['params'])}"
+            for t in found
+        )
+        # Ranked tools first; the full registry (with exact param names)
+        # always follows so the planner can never plan argument-blind.
+        menu += "\n" + "\n".join(
+            f"[{n}] params: {json.dumps(s['params'])} ttl={s['ttl']}s"
+            for n, s in TOOLS.items()
+        )
+    rounds = 0
+    while rounds < tool_rounds:
+        plan_out = chat.complete(
+            [
+                {"role": "system",
+                 "content": PLANNER_PROMPT.format(menu=menu)},
+                {"role": "user",
+                 "content": planner_payload(
+                     question=text,
+                     facts=facts,
+                     results_so_far=[
+                         {"tool": t["name"],
+                          "result": json.loads(t["result_for_model"])
+                          if t["result_for_model"].startswith("{")
+                          else t["result_for_model"]}
+                         for t in outcomes
+                     ],
+                 )},
+            ],
+            temperature=0.0,
+            max_tokens=200,
+            response_format={"type": "json_object"},
+        )
+        try:
+            decision = json.loads(plan_out.text)
+        except json.JSONDecodeError:
+            break
+        name = decision.get("name")
+        if decision.get("action") != "tool" or name not in TOOLS:
+            break
+        args = decision.get("arguments") or {}
+        h = args_hash(name, args)
+        if h in seen_hashes:
+            # The planner asked for an identical call this turn; the
+            # result is already in context. Re-computing teaches the
+            # planner nothing and doubles cost for nothing.
+            messages.append({
+                "role": "user",
+                "content": (f"## Duplicate request\n{name} was already "
+                            "called with exactly these arguments this "
+                            "turn; its result is above. Respond with "
+                            '{"action": "answer"} now.'),
+            })
+            rounds += 1
+            continue
+        seen_hashes.add(h)
+        try:
+            t = run_tool(
+                conn, user_id=user_id, thread_id=thread_id,
+                name=name, args=args,
+            )
+            outcomes.append(t)
+            note = (f"## Tool result — {t['name']} ({t['source']})\n"
+                    f"{t['result_for_model']}\n\n"
+                    "Use this result. Call another tool or give the "
+                    "final answer. If any policy rule, fee, or limit is "
+                    "involved, cite it as [title §chunk] from the "
+                    "retrieved excerpts.")
+        except (ValueError, KeyError, TypeError) as exc:
+            note = (f"## Tool error — {decision.get('name')}\n{exc}\n"
+                    "Fix the arguments or answer without the tool.")
+        messages.append({"role": "user", "content": note})
+        rounds += 1
+    return outcomes
+
+
 def recent_calls(
     conn: psycopg.Connection, *, user_id: str, limit: int = 10
 ) -> list[dict]:

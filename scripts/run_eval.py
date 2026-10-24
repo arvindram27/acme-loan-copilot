@@ -1,8 +1,11 @@
 """Run the golden workload end-to-end and persist + report.
 
 Backends:
-  memory    MemoryAgent (recency + recall + entity + KB + toolbox)
-  baseline  BaselineAgent (no memory, no tools, no KB) — the contrast
+  memory     scratch SQL (mem.* tables: recency + recall + entity + KB + tools
+             + working memory + semantic cache)
+  langgraph  LangGraph PostgresSaver (episodic) + PostgresStore (persona,
+             entity, recall); shares KB + tools + extraction + context
+  baseline   BaselineAgent (no memory, no tools, no KB) — the contrast
 
 For each turn it records latency, tokens, cost, tool-cache hits and the full
 TurnOutcome, then grades the answer with the cascade (code always; Jev and
@@ -10,7 +13,7 @@ the judge only when MEM_JEV_KEY is set). Everything lands in mem.eval_run /
 eval_item / grade so the milestone-8 app can replay it.
 
 Usage:
-    python scripts/run_eval.py [--backend memory,baseline] [--limit N]
+    python scripts/run_eval.py [--backend memory,langgraph,baseline] [--limit N]
 """
 
 from __future__ import annotations
@@ -23,6 +26,11 @@ import time
 import psycopg
 
 from agentmem.agent import BaselineAgent, MemoryAgent
+from agentmem.backends.langgraph import (
+    LangGraphAgent,
+    build_checkpointer,
+    build_store,
+)
 from agentmem.db import migrate
 from agentmem.eval.graders import JevGrader, LLMJudge, run_cascade
 from agentmem.eval.metrics import summarize
@@ -103,6 +111,31 @@ def main() -> int:
                   "mem.persona", "mem.summary", "mem.cache"):
         conn.execute(f"DELETE FROM {table} WHERE user_id IN ('maya', 'liam')")
 
+    # LangGraph backend: its own database (agentmem_lg) holds the shared KB
+    # and tool log in mem.* plus the LangGraph store/checkpointer tables.
+    # LangGraph gets a dedicated ConnectionPool (its store/checkpointer use
+    # psycopg pipelines); the app SQL (KB + tool log) gets a plain connection.
+    lg = None
+    if "langgraph" in backends:
+        from psycopg_pool import ConnectionPool
+
+        migrate(s.database_url_lg)
+        lg_conn = psycopg.connect(s.database_url_lg, autocommit=True)
+        _seed_kb(lg_conn, embedder)
+        lg_pool = ConnectionPool(conninfo=s.database_url_lg,
+                                 min_size=1, max_size=4, open=True)
+        lg_store = build_store(lg_pool, embedder)
+        lg_check = build_checkpointer(lg_pool)
+        # deterministic from scratch: wipe the langgraph memory + tool log.
+        lg_conn.execute(
+            "TRUNCATE checkpoints, checkpoint_writes, checkpoint_blobs, "
+            "store, store_vectors CASCADE"
+        )
+        lg_conn.execute(
+            "DELETE FROM mem.tool_call WHERE user_id IN ('maya', 'liam')"
+        )
+        lg = (lg_conn, lg_store, lg_check)
+
     jev_g = judge_g = None
     if s.jev_key:
         jev_g = JevGrader(JevClient(s), s.jev_escalate_low, s.jev_escalate_high)
@@ -127,6 +160,18 @@ def main() -> int:
                 if user not in agents:
                     agents[user] = MemoryAgent(
                         conn, user_id=user, chat=chat, embedder=embedder)
+                agent = agents[user]
+                t0 = time.perf_counter()
+                outcome = agent.answer(thread_id=thread, text=text)
+                latency_ms = (time.perf_counter() - t0) * 1000
+                tokens = outcome.tokens
+            elif backend == "langgraph":
+                lg_conn, lg_store, lg_check = lg
+                if user not in agents:
+                    agents[user] = LangGraphAgent(
+                        user_id=user, chat=chat, embedder=embedder,
+                        conn=lg_conn, store=lg_store, checkpointer=lg_check,
+                    )
                 agent = agents[user]
                 t0 = time.perf_counter()
                 outcome = agent.answer(thread_id=thread, text=text)
