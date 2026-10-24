@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% set active = "evals" %}
+{% block title %}Evaluation runs{% endblock %}
+{% block content %}
+<h1>Evaluation runs</h1>
+
+{% if runs %}
+<table>
+  <tr><th>run</th><th>backend</th><th>workload</th><th>n</th><th>accuracy</th><th>op_score</th><th>jev $</th><th>finished</th></tr>
+  {% for r in runs %}
+  <tr>
+    <td><a href="/evals/{{ r[0] }}">{{ r[0] }}</a></td>
+    <td>{{ r[1] }}</td>
+    <td>{{ r[3] }}</td>
+    <td>{{ r[4] }}</td>
+    {% set m = r[5] or {} %}
+    <td>{{ '%.2f'|format(m.get('accuracy', 0)) if m.get('accuracy') is not none else '—' }}</td>
+    <td>{{ '%.2f'|format(m.get('op_score', 0)) if m.get('op_score') is not none else '—' }}</td>
+    <td>{{ r[6] }}</td>
+    <td>{{ r[8] }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="muted">No runs yet — try <code>python scripts/run_eval.py</code>.</p>
+{% endif %}
+{% endblock %}

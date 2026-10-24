@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% set active = "evals" %}
+{% block title %}Eval run #{{ run[0] if run else '' }}{% endblock %}
+{% block content %}
+{% if run %}
+<h1>Run #{{ run[0] }} <span class="muted">({{ run[1] }} · {{ run[3] }} · n={{ run[4] }})</span></h1>
+<p class="muted">model {{ run[2] }} · jev cost ${{ run[6] }} · {{ run[7] }} → {{ run[8] }}</p>
+{% else %}
+<h1>Run not found</h1>
+<p class="muted">No evaluation run with that id.</p>
+{% endif %}
+
+{% for it in items %}
+<article class="item">
+  <h2>#{{ it.item_no }} — {{ it.user_id }} / {{ it.thread_id }}</h2>
+  <p class="q">{{ it.question }}</p>
+  <div class="answer"><strong>answer</strong><p>{{ it.answer }}</p></div>
+  <details>
+    <summary>expected labels</summary>
+    <pre>{{ it.expected }}</pre>
+  </details>
+  {% if it.grades %}
+  <table class="grades">
+    <tr><th>grader</th><th>check</th><th>pass</th><th>score</th><th>esc</th><th>rationale</th></tr>
+    {% for _n, grader, check, pass_, score, prob, esc, rationale in it.grades %}
+    <tr>
+      <td>{{ grader }}</td><td>{{ check }}</td>
+      <td>{{ pass_ }}</td><td>{{ score }}</td>
+      <td>{{ '↑' if esc else '' }}</td>
+      <td class="wrap">{{ rationale }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</article>
+{% endfor %}
+{% endblock %}

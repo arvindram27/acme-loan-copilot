@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% set active = "data" %}
+{% block title %}Data explorer{% endblock %}
+{% block content %}
+<h1>Data explorer</h1>
+<p class="muted">Tables in the <code>mem</code> schema (scratch backend).</p>
+
+<div class="table-list">
+  {% for t in tables %}
+  <a href="/data?table={{ t }}" class="chip {{ 'chip-on' if t == table }}">{{ t }}</a>
+  {% endfor %}
+</div>
+
+{% if table %}
+<h2>{{ table }}</h2>
+{% if cols %}
+<table>
+  <tr>{% for c in cols %}<th>{{ c }}</th>{% endfor %}</tr>
+  {% for row in rows %}
+  <tr>{% for v in row %}<td class="wrap">{{ v }}</td>{% endfor %}</tr>
+  {% endfor %}
+</table>
+<p class="muted">{{ rows|length }} rows (limit 50).</p>
+{% else %}
+<p class="muted">No rows.</p>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Acme Loan Copilot{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand">Acme&nbsp;Home&nbsp;Loans — Copilot</span>
+    <nav>
+      <a href="/chat" class="{{ 'active' if active == 'chat' }}">Chat</a>
+      <a href="/memory" class="{{ 'active' if active == 'memory' }}">Memory</a>
+      <a href="/data" class="{{ 'active' if active == 'data' }}">Data</a>
+      <a href="/evals" class="{{ 'active' if active == 'evals' }}">Evals</a>
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

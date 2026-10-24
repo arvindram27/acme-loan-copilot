@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% set active = "chat" %}
+{% block title %}Chat — Acme Loan Copilot{% endblock %}
+{% block content %}
+<h1>Chat</h1>
+<p class="muted">Ask the copilot. Scope (user / thread) is set by you here, never by the model.</p>
+
+<form method="post" action="/chat" class="chat-form">
+  <div class="row">
+    <label>User <input name="user_id" value="{{ user_id }}"></label>
+    <label>Thread <input name="thread_id" value="{{ thread_id }}"></label>
+  </div>
+  <label>Message
+    <textarea name="message" rows="2" placeholder="e.g. What is my maximum qualifying payment?" autofocus></textarea>
+  </label>
+  <button type="submit">Send</button>
+</form>
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+{% if last %}
+<div class="answer">
+  <strong>Copilot</strong>
+  <p>{{ last.text }}</p>
+  <div class="muted small">
+    context {{ last.context_tokens }} tok · {{ last.recent_turns }} recent ·
+    {{ last.recalled_turns }} recalled · {{ 'summary' if last.summary_used else 'no summary' }}
+    · {{ last.tokens }} completion tokens
+  </div>
+</div>
+{% endif %}
+
+{% if history %}
+<h2>Thread “{{ thread_id }}”</h2>
+<div class="thread">
+  {% for m in history %}
+  <div class="turn {{ m.role }}">
+    <span class="who">{{ 'You' if m.role == 'user' else 'Copilot' }}</span>
+    <p>{{ m.content }}</p>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="muted">No conversation yet in this thread.</p>
+{% endif %}
+{% endblock %}
