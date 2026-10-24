@@ -13,3 +13,4 @@ __pycache__/
 
 # data dirs created at runtime
 var/
+eval_validation.json

@@ -171,6 +171,37 @@ def current_facts(conn: psycopg.Connection, entity_id: int) -> dict:
     return {a: v for a, v in cur.fetchall()}
 
 
+def superseded_pairs(conn: psycopg.Connection, *, user_id: str) -> list[dict]:
+    """(old, current) pairs for every corrected fact of a user.
+
+    Used by the answer guard: if a draft states a superseded value and not the
+    active one, it is presenting stale memory as current and gets rewritten.
+    Pairs whose old value equals the current one are dropped.
+    """
+    rows = conn.execute(
+        """
+        SELECT e.name, f.attr, f.value, f.status
+        FROM mem.fact f JOIN mem.entity e ON e.entity_id = f.entity_id
+        WHERE f.user_id = %s ORDER BY f.fact_id
+        """,
+        (user_id,),
+    ).fetchall()
+    active: dict[tuple[str, str], object] = {}
+    history: list[tuple[str, str, object]] = []
+    for name, attr, value, status in rows:
+        if status == "active":
+            active[(name, attr)] = value
+        else:
+            history.append((name, attr, value))
+    out: list[dict] = []
+    for name, attr, old in history:
+        current = active.get((name, attr))
+        if current is not None and str(current) != str(old):
+            out.append({"name": name, "attr": attr,
+                        "old": old, "current": current})
+    return out
+
+
 def fact_history(conn: psycopg.Connection, entity_id: int, attr: str) -> list[dict]:
     """The full version trail of one fact, oldest first."""
     cur = conn.execute(

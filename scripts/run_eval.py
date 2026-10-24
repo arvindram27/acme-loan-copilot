@@ -228,6 +228,7 @@ def main() -> int:
             results.append({
                 "answer_ok": answer_ok,
                 "op_ok": answer_ok if step.get("category") in op_cats else None,
+                "category": step.get("category", "uncategorized"),
                 "latency_ms": latency_ms,
                 "tokens": tokens,
                 "cost_usd": tokens * USD_PER_1K_TOKENS / 1000,

@@ -9,7 +9,7 @@ agreement table shows where a grader actually errs.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 Z95 = 1.96
 
@@ -81,6 +81,7 @@ class RunsSummary:
     p95_ms: float
     tokens_mean: float
     cost_usd: float
+    by_category: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {
@@ -92,6 +93,7 @@ class RunsSummary:
             "summary_used_frac": self.summary_used_frac,
             "p50_ms": self.p50_ms, "p95_ms": self.p95_ms,
             "tokens_mean": self.tokens_mean, "cost_usd": self.cost_usd,
+            "by_category": self.by_category,
         }
 
 
@@ -113,6 +115,22 @@ def summarize(results: list[dict]) -> RunsSummary:
     ans_cacheable = sum(1 for r in results if r.get("answer_cache_eligible"))
     ctx = [r.get("context_tokens", 0) for r in results]
     summary_used = sum(1 for r in results if r.get("summary_used"))
+
+    # Per-category accuracy with its own denominator and Wilson CI, so a
+    # headline 1.00 can be read against what it was measured over.
+    cats: dict[str, list] = {}
+    for r in results:
+        cats.setdefault(r.get("category", "uncategorized"), []).append(r)
+    by_category = {}
+    for cat, rows in sorted(cats.items()):
+        passed = sum(1 for r in rows if r.get("answer_ok"))
+        lo, hi = wilson(passed, len(rows))
+        by_category[cat] = {
+            "n": len(rows), "passed": passed,
+            "accuracy": (passed / len(rows)) if rows else 0.0,
+            "ci": [lo, hi],
+        }
+
     return RunsSummary(
         accuracy=ok / n if n else 0.0,
         accuracy_ci=wilson(ok, n),
@@ -127,6 +145,7 @@ def summarize(results: list[dict]) -> RunsSummary:
         p95_ms=pctl(lat, 95),
         tokens_mean=(sum(tok) / n) if n else 0.0,
         cost_usd=cost,
+        by_category=by_category,
     )
 
 

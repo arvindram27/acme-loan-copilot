@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 
+from agentmem.eval.numcompare import contains_value
 from agentmem.providers.chat import ChatClient
 from agentmem.providers.embed import Embedder
 from agentmem.units import (
@@ -47,6 +48,25 @@ SYSTEM_BASE = (
     "credit minimums, lock fees), cite it as [title §chunk] even when a "
     "tool also supplied the number."
 )
+
+
+_RECALL_WORDS = ("earlier", "before", "previously", "originally",
+                 "used to", "at the start")
+
+
+def _stale_hits(text: str, pairs: list[dict]) -> list[dict]:
+    """Superseded values stated as current: old present, current absent.
+
+    A value is only a hit when the draft mentions the superseded value AND omits
+    the active one — so a faithful recall that mentions the old value and then
+    states the current one is left alone.
+    """
+    hits = []
+    for p in pairs:
+        if (contains_value(text, p["old"])
+                and not contains_value(text, p["current"])):
+            hits.append(p)
+    return hits
 
 
 def _missing_numbers(answer: str, outcomes: list[dict], question: str) -> list[str]:
@@ -288,6 +308,26 @@ class MemoryAgent:
             retry = self.chat.complete(messages)
             if not _missing_numbers(retry.text, tool_outcomes, text):
                 out = retry
+
+        # Supersession guard: a draft that states a superseded value and omits
+        # the current one is presenting stale memory as current. Rewrite once
+        # with the authoritative values. Skipped for explicit recall questions,
+        # where the old value is the point ("what did we say earlier?").
+        if not any(w in text.lower() for w in _RECALL_WORDS):
+            pairs = entity.superseded_pairs(conn, user_id=self.user_id)
+            stale = _stale_hits(out.text, pairs)
+            if stale:
+                note = "; ".join(
+                    f"{p['attr']} was {p['old']} and is now {p['current']}"
+                    for p in stale)
+                messages.append({"role": "user", "content": (
+                    "## Correction\nThe draft presents superseded value(s). "
+                    f"Current authoritative value(s): {note}. Rewrite the "
+                    "answer using the current values; do not present a "
+                    "superseded value as current.")})
+                retry = self.chat.complete(messages)
+                if not _stale_hits(retry.text, pairs):
+                    out = retry
 
         if cacheable:
             cache.store(

@@ -71,13 +71,21 @@ uv run python scripts/validate_graders.py
 uv run python scripts/demo_check.py
 ```
 
-### Results (32-turn workload)
+### Results (32-turn workload, cold cache, 1 repeat)
 
-| backend | accuracy | op_score | p50 | note |
-|---|---|---|---|---|
-| memory (scratch) | **1.00** | **1.00** | ~4.1s | + summaries + semantic answer cache |
-| langgraph | **1.00** | **1.00** | ~3.6s | equivalent on every memory promise |
-| baseline | 0.25 | 0.14 | ~1.1s | no memory at all |
+Artifacts with commit, model IDs, workload hash, denominators and CIs live in
+[`docs/evidence/`](docs/evidence/) (`workload-run.json`, `grader-validation.json`).
+
+| backend | n | accuracy (95% CI) | op_score (95% CI) | p50 | note |
+|---|---|---|---|---|---|
+| memory (scratch) | 32 | **1.00** (0.89–1.00) | **1.00** (0.78–1.00) | ~4.1s | + summaries + semantic cache |
+| langgraph | 32 | **1.00** (0.89–1.00) | **1.00** (0.78–1.00) | ~3.6s | equivalent on the memory promises |
+| baseline | 32 | 0.28 (0.16–0.45) | 0.14 | ~1.2s | no memory at all |
+
+At n=32 a 1.00 has a Wilson lower bound of 0.89 — the interval is the honest number.
+Per-category (memory, passed/n): tool 5/5 · scope 2/2 · setup 3/3 · recall 7/7 ·
+smalltalk 3/3 · kb_grounding 7/7 · entity_update 2/2 · cross_thread_recall 1/1 ·
+entity_update_setup 1/1 · same_turn_correction 1/1.
 
 Grader authority (pre-declared rule: highest κ ≥ 0.6 wins per check): **6 deterministic
 checks → code** (κ = 1.0); **3 judgment checks → Jev** (`forbidden_absent` 1.0,
