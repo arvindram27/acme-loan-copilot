@@ -3,7 +3,7 @@ response captured from the documented API shape (noul + choice + score)."""
 
 import pytest
 
-from agentmem.providers.jev import JevClient, JevError, _parse_answer
+from agentmem.providers.jev import JevClient, JevError, JevResult, _parse_answer
 from agentmem.settings import Settings
 
 FIXTURE_BODY = {
@@ -81,8 +81,17 @@ def test_usage_and_cost_accumulate():
     _ = jc.evaluate(STATE, QUESTIONS)
     _ = jc.evaluate(STATE, QUESTIONS)
     assert jc.usage == {"input": 240, "output": 24}
-    # 2 * (120/1e6*42 + 12/1e6*0.042)
-    assert 0.009 < jc.total_cost_usd < 0.011
+    # 2 * (120/1e6*0.042 + 12/1e6*0.000042)
+    assert 0.0000095 < jc.total_cost_usd < 0.000011
+
+
+def test_cost_reconciles_with_recorded_billing():
+    """Anchor pricing to real usage: 566,932 in + 99,603 out tokens billed
+    $0.0238 (usage-2026-10-23). Guards against a re-introduced unit slip
+    (the constants were once 1000x too high)."""
+    r = JevResult(model="jev-1.14.0", answers={},
+                  input_tokens=566932, output_tokens=99603, latency_ms=0)
+    assert r.cost_usd == pytest.approx(0.0238, abs=1e-4)
 
 
 def test_missing_answer_is_recorded_not_fatal():

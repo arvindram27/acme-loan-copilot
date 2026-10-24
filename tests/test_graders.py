@@ -179,12 +179,39 @@ def test_cascade_judge_targets_only_escalated_checks():
     judge = FakeJudgeChat()
     o = Outcome("answer [DTI §1]", tool_results=[], refs=[
         {"title": "DTI", "chunk_index": 1, "preview": "p"}])
-    rows = run_cascade(0, {}, o, "q", jev=jg, judge=LLMJudge(judge))
+    rows = run_cascade(0, {}, o, "q", jev=jg, judge=LLMJudge(judge),
+                       judge_checks={"answer_grounded"})
     got = {(r.grader, r.check) for r in rows}
     assert ("judge", "answer_grounded") in got       # jev was unsure (0.42)
     assert ("judge", "answer_quality") not in got    # jev was sure (conf .7)
     asked = judge.asked[0]["content"]
     assert "answer_grounded" in asked
+
+
+def test_cascade_judge_skips_unvalidated_checks():
+    """A check outside judge_checks never escalates, even when Jev is unsure."""
+    jg, _ = _jev_grader()
+    judge = FakeJudgeChat()
+    o = Outcome("answer", tool_results=[], refs=[])
+    rows = run_cascade(0, {}, o, "q", jev=jg, judge=LLMJudge(judge),
+                       judge_checks=set())  # nothing validated
+    got = {(r.grader, r.check) for r in rows}
+    assert not any(g == "judge" for g, _ in got)
+    assert judge.asked is None  # never invoked
+
+
+def test_judge_prompt_embeds_check_definitions():
+    """The judge must see the failure_mode taxonomy and the answer_quality
+    rubric; the original prompt passed only check names (the bug that made
+    the judge worse than Jev)."""
+    jg, _ = _jev_grader()
+    judge = FakeJudgeChat()
+    o = Outcome("a", tool_results=[], refs=[])
+    LLMJudge(judge).grade({}, o, "q", which=["failure_mode", "answer_quality"])
+    content = judge.asked[0]["content"]
+    assert "parametric_leak" in content       # a failure-mode name
+    assert "0 = worst" in content             # rubric header
+    assert "Wrong or harmful" in content      # rubric level 0 text
 
 
 def test_grade_rows_unique_per_grader():

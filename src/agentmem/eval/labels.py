@@ -233,14 +233,14 @@ def build_validation_items() -> list[dict]:
                     "for everything this quarter.")
                 flip("answer_grounded", False)
                 labels["failure_mode"] = "parametric_leak"
-                labels["answer_quality"] = 1
+                labels["answer_quality"] = 2  # core right, one unsupported claim
             elif mutation == "invent_number":
                 t2 = text.rstrip(".") + (
                     ". By the way, your own purchasing power works out to "
                     "about 62 percent of your gross income.")
                 flip("answer_grounded", False)
                 labels["failure_mode"] = "ungrounded_arithmetic"
-                labels["answer_quality"] = 1
+                labels["answer_quality"] = 2  # core right, one unsupported claim
             elif mutation == "stale_leak":
                 t2, fm = _STALE[n]
                 flip("must_include", False)
@@ -248,7 +248,7 @@ def build_validation_items() -> list[dict]:
                 flip("forbidden_absent", False)
                 flip("answer_grounded", False)  # stale value is not in the trace
                 labels["failure_mode"] = fm
-                labels["answer_quality"] = 1
+                labels["answer_quality"] = 0 if fm == "scope_leak" else 1
             elif mutation == "strip_citations":
                 t2 = re.sub(r"\s*\[[^\]§]*§\d+\]", "", text)
                 flip("citation_present", False)
@@ -267,7 +267,7 @@ def build_validation_items() -> list[dict]:
                 # and "omits the headline" is exactly what must_include and
                 # failure_mode=omits_tool_result measure.
                 labels["failure_mode"] = "omits_tool_result"
-                labels["answer_quality"] = 1
+                labels["answer_quality"] = 2  # omits the headline -> grounding gap
             elif mutation == "poisoned_tool":
                 req = required_of(exp)
                 if req in _POISON:

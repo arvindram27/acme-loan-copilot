@@ -21,11 +21,18 @@ import httpx
 from agentmem.settings import Settings, get_settings
 
 MAX_ATTEMPTS = 3
-RETRY_STATUS = {429, 500, 502, 503, 504}
+# 529/524 are Cloudflare's "overloaded"/"timeout" transit signals on the
+# TypeSafe edge; both are worth retrying exactly like a 503.
+RETRY_STATUS = {429, 500, 502, 503, 504, 524, 529}
 
-# $42 per Mtoken in, $0.042 per Mtoken out (TypeSafe price list, Jev 1.14).
-PRICE_IN = 42.0
-PRICE_OUT = 0.042
+# Jev 1.14 pricing, anchored to real billing. The TypeSafe schedule is
+# quoted per-billion tokens, which we previously mis-entered as per-million
+# (a 1000x overcharge). Reconciliation: 566,932 input + 99,603 output tokens
+# billed $0.0238 (usage-2026-10-23). Effective rates:
+#   input  $0.042    per 1M tokens   (= $42 per 1B)
+#   output $0.000042 per 1M tokens   (= $0.042 per 1B)
+PRICE_IN = 0.042
+PRICE_OUT = 0.000042
 
 
 @dataclass(frozen=True)
