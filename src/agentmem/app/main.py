@@ -363,8 +363,8 @@ def evals_page(request: Request):
     with _db() as conn:
         runs = conn.execute(
             "SELECT run_id, backend, model, workload, n_items, metrics, "
-            " jev_cost_usd, started_at, finished_at FROM mem.eval_run "
-            "ORDER BY run_id DESC LIMIT 50"
+            " jev_cost_usd, started_at, finished_at, commit_hash, workload_hash "
+            "FROM mem.eval_run ORDER BY run_id DESC LIMIT 50"
         ).fetchall()
     return TEMPLATES.TemplateResponse(request, "evals.html", {
         "active": "measure", "runs": runs,
@@ -376,8 +376,8 @@ def eval_run_page(request: Request, run_id: int):
     with _db() as conn:
         run = conn.execute(
             "SELECT run_id, backend, model, workload, n_items, metrics, "
-            " jev_cost_usd, started_at, finished_at FROM mem.eval_run "
-            "WHERE run_id = %s", (run_id,),
+            " jev_cost_usd, started_at, finished_at, commit_hash, workload_hash "
+            "FROM mem.eval_run WHERE run_id = %s", (run_id,),
         ).fetchone()
         items = conn.execute(
             "SELECT item_id, item_no, user_id, thread_id, question, expected, "

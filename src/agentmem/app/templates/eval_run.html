@@ -5,7 +5,7 @@
 {% if run %}
 <p class="kicker">Evaluation run</p>
 <h1>Run #{{ run[0] }} <span class="muted small">({{ run[1] }} · {{ run[3] }} · n={{ run[4] }})</span></h1>
-<p class="muted small">model {{ run[2] }} · jev cost ${{ run[6] }} · {{ run[7] }} → {{ run[8] }}</p>
+<p class="muted small">model {{ run[2] }} · commit {{ (run[9] or 'unknown')[:12] }} · jev cost ${{ run[6] }} · {{ run[7] }} → {{ run[8] }}</p>
 {% else %}
 <h1>Run not found</h1>
 <p class="muted">No evaluation run with that id.</p>

@@ -109,6 +109,7 @@ class TurnOutcome:
     context_tokens: int = 0           # estimated prompt tokens (system+messages)
     summary_used: bool = False        # a working-memory summary was in context
     summary_turns: int = 0            # turns folded into the summary
+    context_snapshot: dict = field(default_factory=dict)  # exact memory state
 
 
 class BaselineAgent:
@@ -202,14 +203,16 @@ class MemoryAgent:
                 query_embedding=query_vec, min_score=self.cache_min_score,
             )
             if hit is not None:
+                snap = {"cache_hit": True, "cache_id": hit["cache_id"]}
                 conversation.append_turn(
                     conn, user_id=self.user_id, thread_id=thread_id,
                     role="assistant", content=hit["answer"],
+                    context_snapshot=snap,
                 )
                 return TurnOutcome(
                     text=hit["answer"], thread_id=thread_id,
                     recent_turns=0, recalled_turns=0,
-                    answer_cache_hit=True,
+                    answer_cache_hit=True, context_snapshot=snap,
                 )
 
         # Extraction BEFORE context assembly: if the user corrects a fact in
@@ -282,6 +285,17 @@ class MemoryAgent:
         )
         chunks = assembled.chunks  # budget may have trimmed the excerpts
 
+        # Exact memory state this answer will see — persisted so the turn can be
+        # replayed against the fact versions that informed it.
+        snapshot = {
+            "facts_used": facts,
+            "fact_ids": entity.active_fact_ids(conn, user_id=self.user_id),
+            "summary_id": summary["summary_id"] if summary else None,
+            "summary_through": summary["covers_through_seq"] if summary else None,
+            "retrieved_chunk_ids": [c["chunk_id"] for c in chunks],
+            "cache_hit": False,
+        }
+
         messages = [{"role": "system", "content": assembled.system}]
         messages += assembled.messages
         messages.append({"role": "user", "content": text})
@@ -339,6 +353,7 @@ class MemoryAgent:
         conversation.append_turn(
             conn, user_id=self.user_id, thread_id=thread_id,
             role="assistant", content=out.text,
+            context_snapshot=snapshot,
         )
         return TurnOutcome(
             text=out.text,
@@ -370,6 +385,7 @@ class MemoryAgent:
             summary_turns=(
                 len(summary["source_turn_ids"]) if summary else 0
             ),
+            context_snapshot=snapshot,
         )
 
     # ------------------------------------------------------------------

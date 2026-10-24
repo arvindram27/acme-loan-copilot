@@ -14,6 +14,8 @@ model output.
 
 from __future__ import annotations
 
+import json
+
 import psycopg
 
 
@@ -39,13 +41,21 @@ def append_turn(
     seq: int | None = None,
     embedding: list[float] | None = None,
     tokens: int | None = None,
+    context_snapshot: dict | None = None,
 ) -> dict:
-    """Insert one turn. seq defaults to next in thread. Returns the stored row."""
+    """Insert one turn. seq defaults to next in thread. Returns the stored row.
+
+    `context_snapshot` records the memory state that informed an assistant
+    turn (fact ids/values, summary id, retrieved chunk ids), so an answer can
+    be replayed against exactly what it saw.
+    """
     seq = seq if seq is not None else next_seq(conn, thread_id)
     cur = conn.execute(
         """
-        INSERT INTO mem.turn (user_id, thread_id, seq, role, content, tokens, embedding)
-        VALUES (%s, %s, %s, %s, %s, %s, %s::text::vector)
+        INSERT INTO mem.turn
+            (user_id, thread_id, seq, role, content, tokens, embedding,
+             context_snapshot)
+        VALUES (%s, %s, %s, %s, %s, %s, %s::text::vector, %s)
         RETURNING turn_id, seq, created_at
         """,
         (
@@ -56,6 +66,7 @@ def append_turn(
             content,
             tokens,
             _vec_param(embedding) if embedding is not None else None,
+            json.dumps(context_snapshot) if context_snapshot is not None else None,
         ),
     )
     turn_id, stored_seq, created_at = cur.fetchone()

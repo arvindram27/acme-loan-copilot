@@ -163,6 +163,15 @@ class LangGraphAgent:
         )
         chunks = assembled.chunks
 
+        snapshot = {
+            "facts_used": facts,
+            "fact_ids": [],  # the LangGraph store has no row versions
+            "summary_id": None,
+            "summary_through": None,
+            "retrieved_chunk_ids": [c["chunk_id"] for c in chunks],
+            "cache_hit": False,
+        }
+
         chat_messages = [{"role": "system", "content": assembled.system}]
         chat_messages += assembled.messages
         chat_messages.append({"role": "user", "content": text})
@@ -216,6 +225,7 @@ class LangGraphAgent:
             context_tokens=assembled.context_tokens,
             summary_used=False,
             summary_turns=0,
+            context_snapshot=snapshot,
         )
         return {"messages": [AIMessage(content=out.text)]}
 

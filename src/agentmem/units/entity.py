@@ -171,6 +171,15 @@ def current_facts(conn: psycopg.Connection, entity_id: int) -> dict:
     return {a: v for a, v in cur.fetchall()}
 
 
+def active_fact_ids(conn: psycopg.Connection, *, user_id: str) -> list[int]:
+    """The active fact rows for a user — the versions a turn actually read."""
+    rows = conn.execute(
+        "SELECT fact_id FROM mem.fact WHERE user_id = %s AND status = 'active'",
+        (user_id,),
+    ).fetchall()
+    return [int(r[0]) for r in rows]
+
+
 def superseded_pairs(conn: psycopg.Connection, *, user_id: str) -> list[dict]:
     """(old, current) pairs for every corrected fact of a user.
 

@@ -33,6 +33,7 @@ from agentmem.backends.langgraph import (
 )
 from agentmem.db import migrate
 from agentmem.eval.graders import JevGrader, LLMJudge, run_cascade
+from agentmem.eval.linkage import run_linkage
 from agentmem.eval.metrics import summarize
 from agentmem.eval.workload import WORKLOAD_V1
 from agentmem.providers.chat import ChatClient
@@ -89,6 +90,7 @@ def _outcome_dict(outcome) -> dict:
         "context_tokens": outcome.context_tokens,
         "summary_used": outcome.summary_used,
         "summary_turns": outcome.summary_turns,
+        "context_snapshot": outcome.context_snapshot,
     }
 
 
@@ -147,10 +149,15 @@ def main() -> int:
     for backend in backends:
         chat = ChatClient()
         agents: dict[str, MemoryAgent | BaselineAgent] = {}
+        link = run_linkage(s, WORKLOAD_V1)
         run_id = conn.execute(
-            "INSERT INTO mem.eval_run (backend, model, workload) "
-            "VALUES (%s, %s, %s) RETURNING run_id",
-            (backend, s.chat_model, "workload_v1"),
+            "INSERT INTO mem.eval_run "
+            "(backend, model, workload, commit_hash, prompt_version, "
+            " grader_config, workload_hash) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING run_id",
+            (backend, s.chat_model, "workload_v1", link["commit_hash"],
+             link["prompt_version"], json.dumps(link["grader_config"]),
+             link["workload_hash"]),
         ).fetchone()[0]
 
         results = []
