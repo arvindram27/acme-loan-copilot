@@ -43,3 +43,6 @@ def test_memory_agent_answers_from_facts():
         for table in ("mem.turn", "mem.fact", "mem.entity", "mem.persona"):
             conn.execute(f"DELETE FROM {table} WHERE user_id = %s", (user,))
         conn.close()
+
+
+pytestmark = [pytest.mark.db, pytest.mark.live]

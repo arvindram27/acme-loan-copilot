@@ -77,3 +77,6 @@ def test_no_unit_calls_commit_directly():
         or "conn.rollback()" in p.read_text(encoding="utf-8")
     ]
     assert offenders == [], f"units must not own the commit boundary: {offenders}"
+
+
+pytestmark = pytest.mark.db

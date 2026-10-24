@@ -135,3 +135,6 @@ def test_search_tools_ranks_live_registry(conn, monkeypatch):
     )
     hits = toolbox.search_tools(conn, [0.0] * 1535 + [1.0], k=1)
     assert hits and hits[0]["name"] == "rate_lookup"
+
+
+pytestmark = pytest.mark.db

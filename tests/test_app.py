@@ -75,3 +75,6 @@ def test_chat_post_requires_key_or_errors_cleanly():
                                    "message": "hello", "backend": "scratch"})
     assert r.status_code == 200
     assert "disabled" in r.text
+
+
+pytestmark = pytest.mark.db

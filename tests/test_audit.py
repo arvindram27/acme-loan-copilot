@@ -129,3 +129,6 @@ def test_eval_run_accepts_linkage(conn):
     assert row[0] == "abc1234" and row[1] == "v1"
     assert row[2] == {} and row[3] == "deadbeef"
     conn.execute("DELETE FROM mem.eval_run WHERE run_id = %s", (run_id,))
+
+
+pytestmark = pytest.mark.db

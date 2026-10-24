@@ -39,3 +39,6 @@ def test_superseded_pairs_returns_old_and_current(conn):
     pairs = entity.superseded_pairs(conn, user_id=u)
     assert pairs == [{"name": u, "attr": "income_monthly",
                       "old": 7900, "current": 8750}]
+
+
+pytestmark = pytest.mark.db

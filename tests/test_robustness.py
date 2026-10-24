@@ -73,3 +73,6 @@ def test_concurrent_corrections_leave_one_active_value(dsn):
         seed.close()
         c1.close()
         c2.close()
+
+
+pytestmark = pytest.mark.db

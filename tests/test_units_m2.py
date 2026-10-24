@@ -100,3 +100,6 @@ def test_entity_kinds_are_scoped(conn):
     loan = entity.resolve(conn, user_id="m2-u2", kind="loan", name="48 Elm St")
     assert prop["facts"].keys() == {"units"}
     assert loan["facts"].keys() == {"loan_amount"}
+
+
+pytestmark = pytest.mark.db

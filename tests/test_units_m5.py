@@ -155,3 +155,6 @@ def test_summary_increments_version_and_extends(conn):
     assert "SUM[" in second["text"]
     active = working.read_active(conn, u, "w3")
     assert active["version"] == second["version"]
+
+
+pytestmark = pytest.mark.db

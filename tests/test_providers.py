@@ -9,6 +9,9 @@ from agentmem.settings import get_settings
 s = get_settings()
 requires_key = pytest.mark.skipif(not s.has_api_key, reason="MEM_API_KEY not set")
 
+# These make real (paid) model calls, so they are part of the `live` selection.
+pytestmark = pytest.mark.live
+
 
 @requires_key
 def test_chat_roundtrip():

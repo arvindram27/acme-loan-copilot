@@ -109,3 +109,6 @@ def test_allowlist_and_coercion_drops():
     ])
     assert len(dropped) == 4 and len(valid) == 1
     assert valid[0]["attr"] == "first_time_buyer" and valid[0]["value"] is True
+
+
+pytestmark = pytest.mark.db

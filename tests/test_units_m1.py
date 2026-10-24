@@ -120,3 +120,6 @@ def test_old_version_still_readable(conn):
 def test_format_persona(conn):
     text = persona.format_persona(persona.read_active(conn, "m1-user"))
     assert "Persona (version" in text
+
+
+pytestmark = pytest.mark.db

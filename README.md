@@ -24,13 +24,14 @@ keeps arithmetic inside deterministic tools — never in the model's head.
 cd infra
 docker compose up -d
 
-# 2. Python environment (venv outside OneDrive)
+# 2. Python environment
 cd ..
-$env:UV_PROJECT_ENVIRONMENT = 'C:\Users\Dhanalakshmi\.venvs\agent-memory'
 uv sync
+# if your project lives in a synced folder (OneDrive/Dropbox), keep the venv out
+# of it:  $env:UV_PROJECT_ENVIRONMENT = "$HOME/.venvs/agent-memory"  then re-run uv sync
 
 # 3. Keys
-Copy-Item .env.example .env   # put an OpenRouter key in MEM_API_KEY (optional MEM_JEV_KEY)
+Copy-Item .env.example .env   # put an OpenAI/OpenRouter key in MEM_API_KEY (optional MEM_JEV_KEY)
 
 # 4. Migrations + corpus
 uv run python -m agentmem.db
@@ -111,9 +112,12 @@ The Memory Ladder app (run `uv run python scripts/serve.py`, then open http://12
 ## Tests
 
 ```powershell
-uv run pytest                    # 97 contracts + real-database checks
-uv run pytest -m live            # live model tests (skip without a key)
+uv run pytest          # 146 passed, 1 skipped (DB required); 3 live deselected
+uv run pytest -m live  # the 3 paid live-model tests (need MEM_API_KEY)
 ```
+
+Tests are tagged `db` (needs Postgres) and `live` (paid calls). The default
+selection excludes `live`; `db` tests skip cleanly when Postgres is unreachable.
 
 ## Milestones
 
@@ -137,4 +141,4 @@ uv run pytest -m live            # live model tests (skip without a key)
 - [Backends](docs/backends.md) — scratch SQL vs LangGraph, side by side
 - [Evaluation](docs/evaluation.md) — the harness, grader authority, and results
 
-See `C:\Users\Dhanalakshmi\.opencode\plan\agent-memory-loan-copilot.md` for the full plan.
+Design notes and the evaluation methodology live in [`docs/`](docs/).

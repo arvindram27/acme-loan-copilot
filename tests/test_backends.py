@@ -152,3 +152,6 @@ def test_one_turn_graph_round_trip(lg):
     assert out.text == "8,750"
     assert out.facts_used["you"]["applicant.income_monthly"] == 8750
     assert out.thread_id == "t1"
+
+
+pytestmark = pytest.mark.db

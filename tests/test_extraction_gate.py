@@ -92,3 +92,6 @@ def test_extraction_runs_when_enabled(conn):
         assert facts is not None and facts["facts"]["income_monthly"] == 9000
     finally:
         _cleanup(conn, u)
+
+
+pytestmark = pytest.mark.db
