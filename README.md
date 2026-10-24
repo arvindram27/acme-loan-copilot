@@ -13,7 +13,7 @@ keeps arithmetic inside deterministic tools — never in the model's head.
 
 - **Postgres 16 + pgvector** in Docker — two databases: `agentmem` (scratch) and `agentmem_lg` (LangGraph)
 - **Python 3.12** via `uv` (venv lives *outside* the OneDrive-synced folder)
-- **OpenRouter** — one OpenAI-compatible key covers chat, embeddings and the cross-family judge
+- **OpenRouter** — one OpenAI-compatible key covers chat and embeddings; the eval judge is a configurable model (`MEM_JUDGE_MODEL`), currently gated off
 - **LangGraph** `PostgresStore` + `PostgresSaver` for the second backend
 - **FastAPI** for the app pages
 

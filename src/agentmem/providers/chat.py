@@ -48,10 +48,17 @@ class ChatClient:
         temperature: float = 0.2,
         max_tokens: int = 1024,
         response_format: dict | None = None,
+        model: str | None = None,
     ) -> ChatResult:
-        """One chat call. messages use the OpenAI shape: {"role", "content"}."""
+        """One chat call. messages use the OpenAI shape: {"role", "content"}.
+
+        `model` overrides the default chat model for this call (used by the
+        judge, which may be configured to a different family via
+        MEM_JUDGE_MODEL).
+        """
+        chosen = model or self.settings.chat_model
         resp = self._client.chat.completions.create(
-            model=self.settings.chat_model,
+            model=chosen,
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
@@ -65,7 +72,7 @@ class ChatClient:
         text = resp.choices[0].message.content or ""
         return ChatResult(
             text=text,
-            model=resp.model or self.settings.chat_model,
+            model=resp.model or chosen,
             prompt_tokens=getattr(usage, "prompt_tokens", 0) or 0,
             completion_tokens=getattr(usage, "completion_tokens", 0) or 0,
         )

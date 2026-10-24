@@ -139,7 +139,7 @@ def main() -> int:
     jev_g = judge_g = None
     if s.jev_key:
         jev_g = JevGrader(JevClient(s), s.jev_escalate_low, s.jev_escalate_high)
-        judge_g = LLMJudge(ChatClient())
+        judge_g = LLMJudge(ChatClient(), model=s.judge_model)
         print(f"Jev grader ON ({s.jev_model})")
 
     steps = WORKLOAD_V1 if not args.limit else WORKLOAD_V1[:args.limit]

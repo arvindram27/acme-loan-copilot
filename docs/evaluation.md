@@ -26,9 +26,11 @@ scenario:
 - **Jev** (TypeSafe System One) grades judgment checks against the trace as a structured
   state in one batched call: `answer_grounded`, `forbidden_absent`, `failure_mode`,
   `answer_quality`.
-- **Judge** (a second LLM family) is the tie-breaker for low-confidence Jev answers —
-  and is **gated off**, because with a fixed prompt and a fair (all-items) measurement it
-  still never beat Jev on any check.
+- **Judge** (a configurable model, `MEM_JUDGE_MODEL`; it defaults to the chat model, so
+  it is only "cross-family" when you point it at a different family) is the tie-breaker
+  for low-confidence Jev answers — and is **gated off**, because with a fixed prompt and a
+  fair (all-items) measurement it still never beat Jev on any check. Any cross-family
+  claim must name both model IDs in a committed run artifact.
 
 ## Authority (pre-declared rule)
 

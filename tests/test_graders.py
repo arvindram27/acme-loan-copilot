@@ -223,6 +223,34 @@ def test_grade_rows_unique_per_grader():
     assert len(keys) == len(set(keys)), "UNIQUE(item, grader, check)"
 
 
+class ModelRecordingChat:
+    def __init__(self):
+        self.models = []
+
+    def complete(self, messages, **kw):
+        self.models.append(kw.get("model"))
+
+        class R:
+            text = '{"answer_grounded": {"pass": true}}'
+            total_tokens = 5
+
+        return R()
+
+
+def test_judge_uses_configured_model():
+    """settings.judge_model must actually reach the chat client (review #4)."""
+    chat = ModelRecordingChat()
+    LLMJudge(chat, model="anthropic/claude-3.5-haiku").grade(
+        {}, Outcome("a"), "q", which=["answer_grounded"])
+    assert chat.models == ["anthropic/claude-3.5-haiku"]
+
+
+def test_judge_defaults_to_client_model_when_unset():
+    chat = ModelRecordingChat()
+    LLMJudge(chat).grade({}, Outcome("a"), "q", which=["answer_grounded"])
+    assert chat.models == [None]  # None -> ChatClient uses its configured model
+
+
 @pytest.mark.parametrize("value,answer,include,exclude", [
     ("45", "The cap is 450000.", False, True),
     ("45", "The cap is 45 percent.", True, False),

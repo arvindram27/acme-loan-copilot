@@ -370,8 +370,9 @@ JUDGE_PROMPT = (
 
 
 class LLMJudge:
-    def __init__(self, chat):
+    def __init__(self, chat, model: str | None = None):
         self.chat = chat
+        self.model = model  # None -> the chat client's default (same family)
 
     def grade(self, expected: dict, outcome, question: str = "",
               which: list[str] | None = None) -> list[Grade]:
@@ -387,6 +388,7 @@ class LLMJudge:
         out = self.chat.complete(
             messages, temperature=0.0, max_tokens=400,
             response_format={"type": "json_object"},
+            model=self.model,
         )
         rows: list[Grade] = []
         try:

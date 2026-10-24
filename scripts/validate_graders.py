@@ -47,7 +47,7 @@ def main() -> int:
     if s.jev_key:
         jev_g = JevGrader(JevClient(s), s.jev_escalate_low,
                           s.jev_escalate_high)
-        judge_g = LLMJudge(ChatClient())
+        judge_g = LLMJudge(ChatClient(), model=s.judge_model)
         print(f"Jev grader ON ({s.jev_model}); judge measured on ALL items")
     else:
         print("MEM_JEV_KEY not set — code grader only (kappa vs labels)")
