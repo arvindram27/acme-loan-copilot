@@ -84,9 +84,17 @@ Artifacts with commit, model IDs, workload hash, denominators and CIs live in
 | baseline | 32 | 0.28 (0.16–0.45) | 0.14 | ~1.2s | no memory at all |
 
 Measured at commit `71dfaeb`; artifacts with commit, model IDs, workload hash,
-denominators and CIs live in [`docs/evidence/`](docs/evidence/). A held-out check
-(`scripts/heldout_check.py`, 5 fresh questions not in the workload) also passes 5/5,
-so the supersession guard is not tuned only to the 32-item set.
+denominators and CIs live in [`docs/evidence/`](docs/evidence/).
+
+Two held-out checks guard against over-fitting:
+
+- `scripts/heldout_frozen.py` — **frozen set v1**: the 5 questions, expected
+  answers and scoring rule were committed at `b92f0b1` **before** the first run,
+  and the first result is kept as-is in
+  [`docs/evidence/heldout-frozen.json`](docs/evidence/heldout-frozen.json)
+  (5/5, failures would have been retained; v1 is never edited, a re-evaluation
+  would be a new v2).
+- `scripts/heldout_check.py` — 5 earlier fresh questions, also 5/5.
 
 At n=32 a 1.00 has a Wilson lower bound of 0.89 — the interval is the honest number.
 Per-category (memory, passed/n): tool 5/5 · scope 2/2 · setup 3/3 · recall 7/7 ·

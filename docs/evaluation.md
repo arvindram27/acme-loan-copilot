@@ -55,6 +55,27 @@ Jev pricing is anchored to real billing (not the per-billion-vs-per-million unit
 first version had): a full 96-item validation run costs **~$0.004**. The chat path stays
 OpenAI (one variable at a time); Jev never sits in the runtime.
 
+## Held-out protocol
+
+The 32-item workload was used to find and fix failures, so it cannot by itself
+show that a fix generalises. The held-out check follows a freeze-first protocol:
+
+1. **Freeze (F1).** `scripts/heldout_frozen.py` contains the questions, the
+   expected answers and the scoring rule — and is committed with **no results**
+   (`b92f0b1`). Numeric scoring reuses the shared comparator; there is no
+   substring matching.
+2. **Run once.** Immediately after F1, once, with the result captured as-is.
+3. **Publish (F2).** The artifact keeps `frozen_commit` (F1's hash), the script's
+   SHA-256, the models, the timestamp and every answer — **including failures**.
+4. **No retuning.** v1 is never edited. If a failure exposes a product bug, the
+   bug is fixed separately and any re-evaluation is a **new frozen set (v2)**,
+   clearly labelled.
+
+Result of v1: 5/5 (`docs/evidence/heldout-frozen.json`). Its limits are real:
+the questions are author-written and drawn from the same corpus, so they test
+phrasing and fresh numbers, not a different distribution. An independently
+written set would be stronger; none is claimed.
+
 ## Artifacts
 
 `docs/evidence/grader-validation.json` and `docs/evidence/workload-run.json`

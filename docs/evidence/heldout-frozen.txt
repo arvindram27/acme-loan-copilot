@@ -1,0 +1,8 @@
+id               kind          result  answer
+h1-tool          tool          PASS    With your monthly income of $7,400 and your monthly debts of $900, the most you could pa
+h2-rag-ltv       rag           PASS    For a two-unit owner-occupied property, Acme's maximum loan-to-value (LTV) is 85 percent
+h3-rag-lock      rag           PASS    If your rate lock expires and you extend it beyond the grace period, it will cost 0.125 
+h4-supersede     supersede     PASS    Your income on file is $8,100 per month.
+h5-cross-thread  cross_thread  PASS    Your monthly income is $8,100, and your monthly debts are $900.
+
+5/5 passed
