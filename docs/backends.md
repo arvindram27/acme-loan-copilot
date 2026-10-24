@@ -46,3 +46,22 @@ discipline.
 Both backends are behaviorally equivalent on every memory promise the workload
 exercises — supersession, cross-thread recall, scope isolation, tool discipline,
 KB grounding, and recall.
+
+## LangGraph overwrite semantics are a choice, not a constraint
+
+The LangGraph backend stores one entity document and rewrites it with `put()`
+(a read-modify-write, no version chain). That is **this application's** design,
+not something the store API forces — history and concurrency safety can both be
+built on the same store (put a versioned document; compare-and-swap a version
+field).
+
+The trade-off to be able to state plainly: scratch keeps one row per fact
+version with an at-most-one-active constraint (strong for corrected facts, with
+an audit trail); the LangGraph backend takes the simpler document model
+(simpler, weaker history, no conflict handling). To make it concurrency-safe:
+CAS on a version field with bounded retries, or serialize writes per entity —
+the same lock strategy scratch now uses.
+
+Scratch's own concurrency story: `write_fact` takes a transaction-scoped
+advisory lock per entity, so two concurrent corrections cannot both supersede
+the same row (tested in `tests/test_robustness.py`).
