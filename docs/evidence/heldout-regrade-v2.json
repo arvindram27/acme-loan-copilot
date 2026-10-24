@@ -1,0 +1,140 @@
+{
+  "_meta": {
+    "kind": "regrade",
+    "label": "Saved answers from frozen v1 re-scored with scorer v2. NOT a new run, NOT an unseen holdout, and NOT a replacement for the v1 result.",
+    "question_set": "heldout-frozen-v1",
+    "question_set_frozen_commit": "b92f0b1",
+    "source_artifact": "docs/evidence/heldout-frozen.json",
+    "source_artifact_sha256": "db389a250c06ec3bc461c86f57b45922baed1c7b40a1e49e0eee283a0970f20e",
+    "scorer_version": "heldout-scorer-v2",
+    "model_calls": 0,
+    "generated_at_utc": "2026-10-24T16:44:42+00:00",
+    "commit": "ccb9463",
+    "scoring_change": "h3-rag-lock now also requires a seven-day period in the answer; every other question keeps the frozen v1 rule."
+  },
+  "summary": {
+    "total": 5,
+    "v1_passed": 5,
+    "v2_passed": 5,
+    "changed": []
+  },
+  "questions": [
+    {
+      "id": "h1-tool",
+      "question": "With my income and my car payment, what is the most I could pay each month under Acme's DTI limit?",
+      "answer": "With your monthly income of $7,400 and your monthly debts of $900, the most you could pay each month under Acme's DTI limit is $2,430. This is based on a maximum debt-to-income ratio of 45% [Acme Underwriting Guide — Debt-to-Income §0].",
+      "v1_pass": true,
+      "v2": {
+        "pass": true,
+        "scorer_version": "heldout-scorer-v2",
+        "checks": {
+          "must_include": {
+            "2430": true
+          },
+          "must_exclude_absent": {},
+          "cite_ok": true,
+          "tool_ok": true,
+          "tool_calls": [
+            "affordability_calculator"
+          ]
+        },
+        "failures": []
+      },
+      "changed": false
+    },
+    {
+      "id": "h2-rag-ltv",
+      "question": "What is Acme's maximum LTV for a two-unit owner-occupied property?",
+      "answer": "For a two-unit owner-occupied property, Acme's maximum loan-to-value (LTV) is 85 percent [Acme Underwriting Guide — LTV Limits §1].",
+      "v1_pass": true,
+      "v2": {
+        "pass": true,
+        "scorer_version": "heldout-scorer-v2",
+        "checks": {
+          "must_include": {
+            "85": true
+          },
+          "must_exclude_absent": {},
+          "cite_ok": true,
+          "tool_ok": true,
+          "tool_calls": []
+        },
+        "failures": []
+      },
+      "changed": false
+    },
+    {
+      "id": "h3-rag-lock",
+      "question": "If my rate lock expires and I extend it beyond the grace period, what does that cost?",
+      "answer": "If your rate lock expires and you extend it beyond the grace period, it will cost 0.125 points per seven days [Acme Product Sheet — Rate Lock Policy §1].",
+      "v1_pass": true,
+      "v2": {
+        "pass": true,
+        "scorer_version": "heldout-scorer-v2",
+        "checks": {
+          "must_include": {
+            "0.125": true
+          },
+          "must_exclude_absent": {},
+          "cite_ok": true,
+          "tool_ok": true,
+          "tool_calls": [
+            "rate_lookup",
+            "rate_lookup",
+            "rate_lookup"
+          ],
+          "duration_ok": true
+        },
+        "failures": []
+      },
+      "changed": false
+    },
+    {
+      "id": "h4-supersede",
+      "question": "My raise came through - I make 8,100 a month now. What is my income on file?",
+      "answer": "Your income on file is $8,100 per month.",
+      "v1_pass": true,
+      "v2": {
+        "pass": true,
+        "scorer_version": "heldout-scorer-v2",
+        "checks": {
+          "must_include": {
+            "8100": true
+          },
+          "must_exclude_absent": {
+            "7400": true
+          },
+          "cite_ok": true,
+          "tool_ok": true,
+          "tool_calls": []
+        },
+        "failures": []
+      },
+      "changed": false
+    },
+    {
+      "id": "h5-cross-thread",
+      "question": "What income and monthly debts are on file for me?",
+      "answer": "Your monthly income is $8,100, and your monthly debts are $900.",
+      "v1_pass": true,
+      "v2": {
+        "pass": true,
+        "scorer_version": "heldout-scorer-v2",
+        "checks": {
+          "must_include": {
+            "8100": true,
+            "900": true
+          },
+          "must_exclude_absent": {
+            "7400": true
+          },
+          "cite_ok": true,
+          "tool_ok": true,
+          "tool_calls": []
+        },
+        "failures": []
+      },
+      "changed": false
+    }
+  ]
+}

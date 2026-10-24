@@ -1,0 +1,8 @@
+id               v1   v2   v2 checks
+h1-tool          PASS PASS duration_ok=n/a
+h2-rag-ltv       PASS PASS duration_ok=n/a
+h3-rag-lock      PASS PASS duration_ok=True
+h4-supersede     PASS PASS duration_ok=n/a
+h5-cross-thread  PASS PASS duration_ok=n/a
+
+v1 5/5  ->  v2 5/5

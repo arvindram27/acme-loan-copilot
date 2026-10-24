@@ -71,10 +71,60 @@ show that a fix generalises. The held-out check follows a freeze-first protocol:
    bug is fixed separately and any re-evaluation is a **new frozen set (v2)**,
    clearly labelled.
 
-Result of v1: 5/5 (`docs/evidence/heldout-frozen.json`). Its limits are real:
-the questions are author-written and drawn from the same corpus, so they test
-phrasing and fresh numbers, not a different distribution. An independently
-written set would be stronger; none is claimed.
+### Question sets and scorers are versioned separately
+
+A question set and a scorer answer different questions, so they version
+independently:
+
+| version | what it fixes | where |
+|---|---|---|
+| `heldout-frozen-v1` | the 5 questions, expected answers, seed message | `scripts/heldout_frozen.py`, `docs/evidence/heldout-frozen.json` |
+| `heldout-scorer-v1` | the scoring rule used for the v1 result | frozen inside the v1 script |
+| `heldout-scorer-v2` | h3 additionally requires the seven-day period; other questions unchanged | `src/agentmem/eval/heldout_scorer.py` |
+
+Revising the scorer does **not** create a new question set and does **not**
+rewrite the v1 result. Two derived artifacts are produced, and they are labelled
+differently:
+
+- **Regrade** (`scripts/regrade_heldout.py` → `docs/evidence/heldout-regrade-v2.json`):
+  the *saved* v1 answers re-scored under v2. No model calls. It shows only that
+  the recorded answers survive a stricter rule.
+- **Regression run** (`scripts/heldout_regression.py` →
+  `docs/evidence/heldout-regression-v2.json`): the same five **known** questions
+  executed once under v2 with the same model configuration. This is a regression
+  check, **not** an unseen holdout — the questions are neither new nor hidden.
+
+v1 scored h3 leniently: it asked for `0.125` and a citation, not the period, so
+"0.125 points per 30 days" would have passed. v2 adds the duration condition and
+is covered by local tests that reject a missing or wrong period even when the
+number and citation are present.
+
+Result of v1: 5/5 (`docs/evidence/heldout-frozen.json`), unchanged.
+
+### What the freeze does and does not establish
+
+Be precise about the claim:
+
+- **Established:** the questions and scoring were committed before the *recorded*
+  first run, and the artifact records F1's hash and the run timestamp. The order
+  of the recorded run is supported by commit history.
+- **Not established:** that there were no earlier runs or tuning. Nothing in the
+  repo can show that; `worktree_clean_at_run` is self-reported by the script, and
+  an informal local run would leave no trace.
+- **Not established:** that the model outputs are authentic beyond the committed
+  evidence. The 5/5 is **author-reported**; it was not independently reproduced.
+- **Independence and coverage are different things.** These questions were
+  written by the author, who knew which fixes they were aimed at. An externally
+  authored set would improve *independence*; it would not by itself establish
+  *coverage* of real loan-officer traffic. Representative sampling and broader
+  scenarios are needed for that.
+- **n = 5, one recorded run, no repeats.** That cannot support a confidence
+  interval or a real-world success rate, and none is claimed.
+
+Frozen set v1 (5 author-written questions, committed before the recorded first
+run; result author-reported): **5/5**. The commit order is recorded; it does not
+prove no earlier runs or tuning, independence from the author, or coverage of
+real traffic.
 
 ## Artifacts
 

@@ -86,15 +86,23 @@ Artifacts with commit, model IDs, workload hash, denominators and CIs live in
 Measured at commit `71dfaeb`; artifacts with commit, model IDs, workload hash,
 denominators and CIs live in [`docs/evidence/`](docs/evidence/).
 
-Two held-out checks guard against over-fitting:
+**Held-out checks** — details, versions and limits in
+[Evaluation](docs/evaluation.md):
 
-- `scripts/heldout_frozen.py` — **frozen set v1**: the 5 questions, expected
-  answers and scoring rule were committed at `b92f0b1` **before** the first run,
-  and the first result is kept as-is in
-  [`docs/evidence/heldout-frozen.json`](docs/evidence/heldout-frozen.json)
-  (5/5, failures would have been retained; v1 is never edited, a re-evaluation
-  would be a new v2).
+- **Frozen set v1** — 5 author-written questions, expected answers and scoring
+  rule committed at `b92f0b1` **before** the recorded first run. Result: 5/5
+  ([artifact](docs/evidence/heldout-frozen.json)). Outputs are author-reported.
+- **Scorer v2** — `heldout-scorer-v2` additionally requires the seven-day period
+  for the rate-lock question. The saved v1 answers re-scored under it: 5/5
+  ([regrade](docs/evidence/heldout-regrade-v2.json), no model calls); the five
+  known questions re-run once under it: see the regression artifact.
 - `scripts/heldout_check.py` — 5 earlier fresh questions, also 5/5.
+
+The commit order records a *freeze-before-run* order; it cannot prove there were
+no earlier runs or tuning, independence from the author, or coverage of real
+traffic. Independence and coverage are separate: an externally authored set
+would improve the first, not automatically the second. n = 5, one recorded run —
+no confidence interval is claimed.
 
 At n=32 a 1.00 has a Wilson lower bound of 0.89 — the interval is the honest number.
 Per-category (memory, passed/n): tool 5/5 · scope 2/2 · setup 3/3 · recall 7/7 ·
