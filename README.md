@@ -66,6 +66,9 @@ uv run python scripts/run_eval.py --backend memory,langgraph,baseline
 
 # Validate the graders against constructed labels (prints the κ table)
 uv run python scripts/validate_graders.py
+
+# Five very different questions, on both backends, with assertions (exit 0 = all pass)
+uv run python scripts/demo_check.py
 ```
 
 ### Results (32-turn workload)
@@ -80,6 +83,22 @@ Grader authority (pre-declared rule: highest κ ≥ 0.6 wins per check): **6 det
 checks → code** (κ = 1.0); **3 judgment checks → Jev** (`forbidden_absent` 1.0,
 `answer_grounded` 0.79, `failure_mode` 0.83); `answer_quality` is a soft signal (±1 = 0.99);
 the LLM judge is gated off because it never beat Jev. A full Jev validation run costs ~$0.004.
+
+## Screenshots
+
+The Memory Ladder app (run `uv run python scripts/serve.py`, then open http://127.0.0.1:8730):
+
+<img src="docs/screenshots/01-overview.png" alt="Overview — the memory ladder" width="720">
+
+<img src="docs/screenshots/02-chat-scratch.png" alt="Chat — scratch backend with the live memory panel" width="720">
+
+<img src="docs/screenshots/03-chat-langgraph.png" alt="Chat — LangGraph backend (the backend switcher)" width="720">
+
+<img src="docs/screenshots/04-entity-supersession.png" alt="Entity rung — superseded facts struck through" width="720">
+
+<img src="docs/screenshots/05-measure.png" alt="Measure — evaluation runs" width="720">
+
+<img src="docs/screenshots/06-data.png" alt="Data explorer" width="720">
 
 ## Tests
 
