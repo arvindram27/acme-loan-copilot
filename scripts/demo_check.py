@@ -19,6 +19,7 @@ from agentmem.app.deps import get_langgraph, make_agent
 from agentmem.db import migrate
 from agentmem.eval.numcompare import contains_value
 from agentmem.settings import get_settings
+from agentmem.units import entity
 
 SEED = [
     ("maya", "demo", "I make 8,000 a month, and 1,200 of that goes to my car loan payment."),
@@ -133,9 +134,11 @@ def main() -> int:
     lg = get_langgraph()
 
     # reset scratch demo users
-    for table in ("turn", "fact", "entity", "persona", "summary", "cache",
-                  "tool_call", "app_trace"):
+    for table in ("turn", "persona", "summary", "cache", "tool_call",
+                  "app_trace"):
         conn.execute(f"DELETE FROM mem.{table} WHERE user_id IN ('maya', 'liam')")
+    for u in ("maya", "liam"):
+        entity.purge_user(conn, user_id=u)
 
     # reset langgraph store/checkpointer + tool log
     lg["conn"].execute(

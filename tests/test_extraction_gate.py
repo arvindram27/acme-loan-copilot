@@ -8,6 +8,7 @@ import pytest
 from agentmem.agent import MemoryAgent
 from agentmem.db import migrate
 from agentmem.settings import get_settings
+from agentmem.units import entity
 
 DIMS = 1536
 
@@ -58,9 +59,9 @@ def conn():
 
 
 def _cleanup(conn, user):
-    for table in ("mem.turn", "mem.fact", "mem.entity", "mem.persona",
-                  "mem.summary", "mem.cache"):
+    for table in ("mem.turn", "mem.persona", "mem.summary", "mem.cache"):
         conn.execute(f"DELETE FROM {table} WHERE user_id = %s", (user,))
+    entity.purge_user(conn, user_id=user)
 
 
 def test_extraction_skipped_when_disabled(conn):

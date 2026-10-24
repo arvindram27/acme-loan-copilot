@@ -175,6 +175,27 @@ def current_facts(conn: psycopg.Connection, entity_id: int) -> dict:
     return {a: v for a, v in cur.fetchall()}
 
 
+def purge_user(
+    conn: psycopg.Connection,
+    *,
+    user_id: str | None = None,
+    pattern: str | None = None,
+) -> None:
+    """Maintenance escape hatch: delete matching users' facts and entities.
+
+    mem.fact is append-only for the application; this is the only delete path,
+    gated by a session flag the BEFORE DELETE trigger checks. Used by demo
+    resets and test cleanup — never by the memory write path. `pattern` matches
+    with LIKE (e.g. "tx-%" for test users).
+    """
+    clause = "LIKE %s" if pattern is not None else "= %s"
+    val = pattern if pattern is not None else user_id
+    with conn.transaction():
+        conn.execute("SET LOCAL mem.allow_fact_delete = 'on'")
+        conn.execute(f"DELETE FROM mem.fact WHERE user_id {clause}", (val,))
+        conn.execute(f"DELETE FROM mem.entity WHERE user_id {clause}", (val,))
+
+
 def active_fact_ids(conn: psycopg.Connection, *, user_id: str) -> list[int]:
     """The active fact rows for a user — the versions a turn actually read."""
     rows = conn.execute(

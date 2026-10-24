@@ -40,7 +40,7 @@ from agentmem.providers.chat import ChatClient
 from agentmem.providers.embed import Embedder
 from agentmem.providers.jev import JevClient
 from agentmem.settings import get_settings
-from agentmem.units import cache, knowledge, toolbox
+from agentmem.units import cache, entity, knowledge, toolbox
 
 # Approximate blended $/1k tokens (gpt-4o-mini in+out average) for the cost
 # line; the eval reports it as an estimate, not an invoice.
@@ -109,9 +109,12 @@ def main() -> int:
 
     # Deterministic from scratch: clear the two workload users' memory so a
     # re-run measures the same thing (eval_run/eval_item history is kept).
-    for table in ("mem.tool_call", "mem.turn", "mem.fact", "mem.entity",
-                  "mem.persona", "mem.summary", "mem.cache"):
+    for table in ("mem.tool_call", "mem.turn", "mem.persona",
+                  "mem.summary", "mem.cache"):
         conn.execute(f"DELETE FROM {table} WHERE user_id IN ('maya', 'liam')")
+    # facts/entities are append-only: deleted via the escape-hatch helper
+    entity.purge_user(conn, user_id="maya")
+    entity.purge_user(conn, user_id="liam")
 
     # LangGraph backend: its own database (agentmem_lg) holds the shared KB
     # and tool log in mem.* plus the LangGraph store/checkpointer tables.

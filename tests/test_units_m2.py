@@ -13,8 +13,7 @@ def conn():
     migrate(get_settings().database_url)
     c = psycopg.connect(get_settings().database_url, autocommit=True)
     yield c
-    c.execute("DELETE FROM mem.fact WHERE user_id LIKE 'm2-%'")
-    c.execute("DELETE FROM mem.entity WHERE user_id LIKE 'm2-%'")
+    entity.purge_user(c, pattern="m2-%")
     c.close()
 
 

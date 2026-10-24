@@ -72,8 +72,9 @@ def main() -> int:
     ok = ("75" in out_ltv.text) and any(
         t["value"] == 84000 and t["status"] == "active" for t in trail
     )
-    for table in ("mem.turn", "mem.fact", "mem.entity", "mem.persona"):
+    for table in ("mem.turn", "mem.persona"):
         conn.execute(f"DELETE FROM {table} WHERE user_id = %s", (user,))
+    entity.purge_user(conn, user_id=user)
     conn.close()
     print("RESULT:", "PASS" if ok else "FAIL")
     return 0 if ok else 1

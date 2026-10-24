@@ -52,11 +52,10 @@ def conn():
     migrate(get_settings().database_url)
     c = psycopg.connect(get_settings().database_url, autocommit=True)
     yield c
-    c.execute("DELETE FROM mem.fact_audit WHERE entity_id IN "
-              "(SELECT entity_id FROM mem.entity WHERE user_id LIKE 'au-%')")
-    for table in ("mem.turn", "mem.fact", "mem.entity", "mem.persona",
-                  "mem.summary", "mem.cache"):
+    # fact_audit is immutable (no cleanup); facts/entities go via the hatch
+    for table in ("mem.turn", "mem.persona", "mem.summary", "mem.cache"):
         c.execute(f"DELETE FROM {table} WHERE user_id LIKE 'au-%'")
+    entity.purge_user(c, pattern="au-%")
     c.close()
 
 
@@ -80,16 +79,37 @@ def test_fact_insert_and_supersede_are_audited(conn):
     assert upd[1] is not None and upd[2] is not None
 
 
-def test_fact_delete_is_recorded(conn):
+def test_fact_delete_is_blocked_without_flag(conn):
     u = _user()
     wrote = entity.write_fact(conn, user_id=u, thread_id="t", kind="applicant",
                               name=u, attr="income_monthly", value=1000)
-    conn.execute("DELETE FROM mem.fact WHERE fact_id = %s", (wrote["fact_id"],))
+    with pytest.raises(psycopg.errors.RaiseException):
+        conn.execute("DELETE FROM mem.fact WHERE fact_id = %s",
+                     (wrote["fact_id"],))
+
+
+def test_fact_delete_with_flag_is_recorded(conn):
+    u = _user()
+    wrote = entity.write_fact(conn, user_id=u, thread_id="t", kind="applicant",
+                              name=u, attr="income_monthly", value=1000)
+    with conn.transaction():
+        conn.execute("SET LOCAL mem.allow_fact_delete = 'on'")
+        conn.execute("DELETE FROM mem.fact WHERE fact_id = %s",
+                     (wrote["fact_id"],))
     ops = conn.execute(
         "SELECT a.op FROM mem.fact_audit a "
         "JOIN mem.entity e ON e.entity_id = a.entity_id WHERE e.user_id = %s",
         (u,)).fetchall()
-    assert ("delete",) in ops, "a deleted fact must leave an audit row"
+    assert ("delete",) in ops, "a flagged delete must still leave an audit row"
+
+
+def test_fact_value_update_is_blocked(conn):
+    u = _user()
+    wrote = entity.write_fact(conn, user_id=u, thread_id="t", kind="applicant",
+                              name=u, attr="income_monthly", value=1000)
+    with pytest.raises(psycopg.errors.RaiseException):
+        conn.execute("UPDATE mem.fact SET value = '2000' WHERE fact_id = %s",
+                     (wrote["fact_id"],))
 
 
 def test_turn_stores_context_snapshot(conn):

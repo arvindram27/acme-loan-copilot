@@ -65,11 +65,7 @@ def test_concurrent_corrections_leave_one_active_value(dsn):
         assert len(active) == 1, f"exactly one current value, got {active}"
         assert active[0][0] in (2000, 3000)
     finally:
-        seed.execute(
-            "DELETE FROM mem.fact_audit WHERE entity_id IN "
-            "(SELECT entity_id FROM mem.entity WHERE user_id = %s)", (u,))
-        seed.execute("DELETE FROM mem.fact WHERE user_id = %s", (u,))
-        seed.execute("DELETE FROM mem.entity WHERE user_id = %s", (u,))
+        entity.purge_user(seed, user_id=u)  # fact_audit stays (immutable)
         seed.close()
         c1.close()
         c2.close()

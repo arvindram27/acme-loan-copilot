@@ -106,8 +106,7 @@ def main() -> int:
     print("RESULT: memory agent produced the corrected income 105000:",
           recall_used)
     conn.execute("DELETE FROM mem.turn WHERE user_id = %s", (user,))
-    conn.execute("DELETE FROM mem.fact WHERE user_id = %s", (user,))
-    conn.execute("DELETE FROM mem.entity WHERE user_id = %s", (user,))
+    entity.purge_user(conn, user_id=user)
     conn.execute("DELETE FROM mem.persona WHERE user_id = %s", (user,))
     conn.close()
     return 0 if recall_used else 1

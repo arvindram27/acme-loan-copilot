@@ -40,8 +40,9 @@ def test_memory_agent_answers_from_facts():
         ).recent_turns(conn, "live-thread", k=10)}
         assert len(seqs) >= 2, "user and assistant turns persisted"
     finally:
-        for table in ("mem.turn", "mem.fact", "mem.entity", "mem.persona"):
+        for table in ("mem.turn", "mem.persona"):
             conn.execute(f"DELETE FROM {table} WHERE user_id = %s", (user,))
+        entity.purge_user(conn, user_id=user)
         conn.close()
 
 

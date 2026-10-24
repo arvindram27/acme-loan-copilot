@@ -15,7 +15,7 @@ from agentmem.db import migrate
 from agentmem.providers.chat import ChatClient
 from agentmem.providers.embed import Embedder
 from agentmem.settings import get_settings
-from agentmem.units import toolbox
+from agentmem.units import entity, toolbox
 
 
 def main() -> int:
@@ -65,9 +65,9 @@ def main() -> int:
 
     ok = (out1.tool_calls and out1.tool_calls[0]["name"] == "affordability_calculator"
           and any(t["source"] == "cache" for t in [b]) and d["offloaded"])
-    for table in ("mem.turn", "mem.fact", "mem.entity", "mem.persona",
-                  "mem.tool_call"):
+    for table in ("mem.turn", "mem.persona", "mem.tool_call"):
         conn.execute(f"DELETE FROM {table} WHERE user_id = %s", (user,))
+    entity.purge_user(conn, user_id=user)
     conn.close()
     print("RESULT:", "PASS" if ok else "FAIL")
     return 0 if ok else 1
