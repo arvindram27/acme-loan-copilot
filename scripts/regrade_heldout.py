@@ -13,13 +13,13 @@ replaced; this writes `docs/evidence/heldout-regrade-v2.json` alongside it.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from agentmem.eval.hashing import file_hashes
 from agentmem.eval.heldout_scorer import (
     SCORER_V2,
     Answer,
@@ -99,7 +99,11 @@ def main() -> int:
             "question_set": frozen["_meta"].get("set"),
             "question_set_frozen_commit": frozen["_meta"].get("frozen_commit"),
             "source_artifact": "docs/evidence/heldout-frozen.json",
-            "source_artifact_sha256": hashlib.sha256(SRC.read_bytes()).hexdigest(),
+            # Both hashes, named explicitly: raw bytes vary with the checkout's
+            # line endings; the normalised hash is the stable content identity.
+            # The pre-2026-10-24 artifacts used a flat `source_artifact_sha256`
+            # that meant the raw-byte hash; it is not reused or reinterpreted.
+            "source_artifact_hash": file_hashes(SRC),
             "scorer_version": SCORER_V2,
             "model_calls": 0,
             "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),

@@ -15,7 +15,6 @@ the script stops instead of silently comparing two variables.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import random
 import subprocess
@@ -27,6 +26,7 @@ import psycopg
 
 from agentmem.agent import MemoryAgent
 from agentmem.db import migrate
+from agentmem.eval.hashing import file_hashes
 from agentmem.eval.heldout_scorer import (
     SCORER_V2,
     Answer,
@@ -117,9 +117,7 @@ def main() -> int:
     command = "python scripts/heldout_regression.py"
     commit = _git("rev-parse", "--short", "HEAD")
     worktree_clean = _git("status", "--porcelain") == ""
-    questions_sha = hashlib.sha256(
-        Path(frozen_mod.__file__).read_bytes()
-    ).hexdigest()
+    questions_hash = file_hashes(frozen_mod.__file__)
 
     u = f"regression-v2-{random.randint(10**8, 10**9 - 1)}"
     rows: list[dict] = []
@@ -205,7 +203,10 @@ def main() -> int:
             "question_set": v1_meta.get("set"),
             "question_set_frozen_commit": v1_meta.get("frozen_commit"),
             "questions_source": "scripts/heldout_frozen.py",
-            "questions_source_sha256": questions_sha,
+            # See agentmem.eval.hashing: raw bytes depend on the checkout's line
+            # endings; the normalised hash is the stable content identity. The
+            # earlier flat `questions_source_sha256` field meant the raw hash.
+            "questions_source_hash": questions_hash,
             "scorer_version": SCORER_V2,
             "command": command,
             "commit": commit,

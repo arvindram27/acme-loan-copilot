@@ -116,6 +116,60 @@ embeddings excluded). No failure occurred, so — as with v1 — the
 retain-failures rule was again not exercised. The run was executed once; it was
 not repeated until it passed.
 
+### Hash scheme (`sha256-lf-v1`)
+
+Hashing the bytes as read from disk is checkout-dependent: this repository uses
+`core.autocrlf=true`, and Python's text-mode writes (`Path.write_text`) emit CRLF
+on Windows. The same committed content can therefore be LF in git and CRLF on
+disk, and a raw SHA-256 differs between them.
+
+The v2 regrade artifact is an instance: its `source_artifact_sha256` is
+`db389a25…`, which is the SHA-256 of the **CRLF working-copy bytes** of
+`heldout-frozen.json`. The committed content is `247697e0…` (the LF blob). The
+answers in both copies are identical, so the two hashes describe the same file;
+the hash was simply not portable.
+
+`src/agentmem/eval/hashing.py` defines a versioned content hash:
+
+- **`sha256-lf-v1`** — SHA-256, lowercase hex, over the bytes after replacing
+  every `\r\n` with `\n`. A lone `\r` is left untouched, trailing newlines are
+  not stripped, bytes are never decoded, and nothing else is normalised. It is a
+  byte normalisation, not a canonicalisation: key order and whitespace still
+  change the hash.
+- The **raw-byte** hash is kept separately as `raw_sha256`. It answers a
+  different question ("are these the exact bytes on this machine?") and is
+  expected to vary with the checkout.
+
+Historical artifacts are **not** rewritten and their fields keep their original
+meaning: in `heldout-regrade-v2.json`, `source_artifact_sha256` is the raw-byte
+hash, and in `heldout-regression-v2.json`, `questions_source_sha256` is the same
+(raw) hash of `scripts/heldout_frozen.py`. Future artifacts from the regrade and
+regression tooling carry a self-describing object instead:
+
+```json
+"source_artifact_hash": {
+  "scheme": "sha256-lf-v1",
+  "raw_sha256": "...",
+  "normalized_sha256": "..."
+}
+```
+
+The old flat field names are retired rather than reinterpreted. To verify a
+historical artifact across checkouts, compare `normalized_sha256` against the git
+blob's SHA-256:
+
+| file | raw (this CRLF checkout) | normalised (= git blob) |
+|---|---|---|
+| `docs/evidence/heldout-frozen.json` | `db389a25…` | `247697e0…` |
+| `docs/evidence/heldout-regrade-v2.json` | `499af86b…` | `875062d9…` |
+| `docs/evidence/heldout-regression-v2.json` | `a3332723…` | `570ccf60…` |
+| `scripts/heldout_frozen.py` | `c83d4cfd…` | `c83d4cfd…` |
+
+Offline tests (`tests/test_evidence_hash.py`) pin the scheme: LF and CRLF forms of
+identical content hash the same, a content change hashes differently, raw hashes
+still distinguish the encodings, and the frozen v1 artifact's normalised hash is
+unchanged.
+
 ### What the freeze does and does not establish
 
 Be precise about the claim:
