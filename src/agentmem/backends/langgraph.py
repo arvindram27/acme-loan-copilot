@@ -25,7 +25,14 @@ from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.store.postgres import PostgresStore
 
-from agentmem.agent import SYSTEM_BASE, TurnOutcome, _missing_numbers
+from agentmem.agent import (
+    SYSTEM_BASE,
+    TurnBudget,
+    TurnBudgetExceeded,
+    TurnOutcome,
+    _BudgetedChat,
+    _missing_numbers,
+)
 from agentmem.units import context, extract, knowledge, persona, toolbox
 
 
@@ -78,6 +85,8 @@ class LangGraphAgent:
         use_tools: bool = True,
         tool_rounds: int = 3,
         max_context_tokens: int = 2800,
+        max_calls_per_turn: int = 8,
+        turn_deadline_s: float = 90.0,
     ):
         self.user_id = user_id
         self.chat = chat
@@ -91,6 +100,8 @@ class LangGraphAgent:
         self.extract_turns = extract_turns
         self.use_tools = use_tools
         self.tool_rounds = tool_rounds
+        self.max_calls_per_turn = max_calls_per_turn
+        self.turn_deadline_s = turn_deadline_s
         self.max_context_tokens = max_context_tokens
         self._last_outcome: TurnOutcome | None = None
         self._ensure_persona()
@@ -112,12 +123,16 @@ class LangGraphAgent:
         text = messages[-1].content
         seq = len(messages)  # 1-based count incl. the just-added user turn
 
+        budget = TurnBudget(max_calls=self.max_calls_per_turn,
+                            deadline_s=self.turn_deadline_s)
+        chat = _BudgetedChat(self.chat, budget)
+
         # Extraction BEFORE context: a correction in this turn is reflected.
         # The LLM call sits inside the flag, so "off" really means off.
         facts_written = 0
         dropped: list = []
         if self.extract_turns:
-            raw, _ = extract.extract_facts(self.chat, text)
+            raw, _ = extract.extract_facts(chat, text)
             if raw:
                 valid, dropped = extract.validate_facts(raw)
                 if valid:
@@ -178,12 +193,12 @@ class LangGraphAgent:
 
         tool_outcomes = toolbox.run_tool_loop(
             self.conn, user_id=self.user_id, thread_id=thread_id,
-            chat=self.chat, messages=chat_messages, text=text,
+            chat=chat, messages=chat_messages, text=text,
             query_vec=query_vec, facts=facts,
             use_tools=self.use_tools, tool_rounds=self.tool_rounds,
         )
 
-        out = self.chat.complete(chat_messages)
+        out = chat.complete(chat_messages)
         miss = _missing_numbers(out.text, tool_outcomes, text)
         if miss:
             chat_messages.append({
@@ -194,8 +209,12 @@ class LangGraphAgent:
                     "Final answer, using those numbers."
                 ),
             })
-            retry = self.chat.complete(chat_messages)
-            if not _missing_numbers(retry.text, tool_outcomes, text):
+            try:
+                retry = chat.complete(chat_messages)
+            except TurnBudgetExceeded:
+                retry = None
+            if retry is not None and not _missing_numbers(
+                    retry.text, tool_outcomes, text):
                 out = retry
 
         self._last_outcome = TurnOutcome(

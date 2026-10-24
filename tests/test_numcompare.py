@@ -36,3 +36,22 @@ def test_contains_text_word_boundary():
     assert contains_text("the category is set", "cat") is False
     assert contains_text("the cat sat", "cat") is True
     assert contains_text("stale_fact", "stale") is False  # underscore is a word char
+
+
+def test_hyphen_range_is_not_a_negative_sign():
+    assert [str(n) for n in numbers_in("income 5-10 years")] == ["5", "10"]
+    assert contains_value("income 5-10 years", "-10") is False
+    assert contains_value("income 5-10 years", "10") is True
+
+
+def test_negative_numbers_still_preserved():
+    assert contains_value("debt -1,200", "-1200") is True
+    assert contains_value("debt -1,200", "1200") is False
+
+
+def test_exact_mode_rejects_close_values():
+    # fuzzy (headline rounding) matches 8.5 to the label 8 ...
+    assert contains_value("rate 8.5%", "8") is True
+    # ... but exact mode (used by the supersession guard) does not.
+    assert contains_value("rate 8.5%", "8", exact=True) is False
+    assert contains_value("rate 8.5%", "8.5", exact=True) is True

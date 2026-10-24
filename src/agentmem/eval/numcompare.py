@@ -20,7 +20,7 @@ from __future__ import annotations
 import re
 from decimal import Decimal, InvalidOperation
 
-_NUM_RE = re.compile(r"[-+]?\d[\d,]*(?:\.\d+)?")
+_NUM_RE = re.compile(r"(?<![\d])[-+]?\d[\d,]*(?:\.\d+)?")
 
 __all__ = ["parse_number", "numbers_in", "contains_value", "contains_text"]
 
@@ -56,11 +56,19 @@ def _decimals(expected) -> int:
     return len(text.split(".", 1)[1]) if "." in text else 0
 
 
-def contains_value(text: str, expected) -> bool:
-    """True when `text` states a number matching `expected` within tolerance."""
+def contains_value(text: str, expected, *, exact: bool = False) -> bool:
+    """True when `text` states a number matching `expected`.
+
+    Fuzzy (default): within half of the expected value's last decimal place, so
+    a money headline "2737" matches "2,737.50". Exact: Decimal equality, used by
+    `must_exclude` and the supersession guard where a false positive is harmful
+    ("8" must not match "8.5").
+    """
     exp = parse_number(expected)
     if exp is None:
         return contains_text(text, str(expected))
+    if exact:
+        return any(n == exp for n in numbers_in(text))
     tol = Decimal("0.5") * (Decimal(10) ** -_decimals(expected))
     return any(abs(n - exp) <= tol for n in numbers_in(text))
 

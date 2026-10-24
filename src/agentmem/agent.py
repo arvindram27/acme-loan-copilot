@@ -18,6 +18,7 @@ the user asked, not what we replied).
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass, field
 
 from agentmem.eval.numcompare import contains_value
@@ -63,8 +64,9 @@ def _stale_hits(text: str, pairs: list[dict]) -> list[dict]:
     """
     hits = []
     for p in pairs:
-        if (contains_value(text, p["old"])
-                and not contains_value(text, p["current"])):
+        # exact: a superseded "8" must not be triggered by a correct "8.5".
+        if (contains_value(text, p["old"], exact=True)
+                and not contains_value(text, p["current"], exact=True)):
             hits.append(p)
     return hits
 
@@ -89,6 +91,47 @@ def _missing_numbers(answer: str, outcomes: list[dict], question: str) -> list[s
                 if num not in clean:
                     missing.add(num)
     return missing
+
+
+class TurnBudgetExceeded(Exception):
+    """Raised when a turn has used its chat-call/time budget."""
+
+
+class TurnBudget:
+    """Caps chat calls and wall-clock time per turn (review #10).
+
+    The SDK bounds retries per call; this bounds the *total* across a turn, so
+    worst-case latency (draft + number retry + supersession rewrite, each with
+    its own retries) cannot multiply without limit. When the budget is spent,
+    callers skip optional retries and keep the best draft.
+    """
+
+    def __init__(self, *, max_calls: int = 8, deadline_s: float = 90.0):
+        self.max_calls = max_calls
+        self.deadline_s = deadline_s
+        self.calls = 0
+        self._t0 = time.monotonic()
+
+    def available(self) -> bool:
+        return (self.calls < self.max_calls
+                and (time.monotonic() - self._t0) < self.deadline_s)
+
+    def record(self) -> None:
+        self.calls += 1
+
+
+class _BudgetedChat:
+    """Counts calls against a TurnBudget; raises TurnBudgetExceeded when spent."""
+
+    def __init__(self, chat, budget: TurnBudget):
+        self._chat = chat
+        self._budget = budget
+
+    def complete(self, messages, **kw):
+        if not self._budget.available():
+            raise TurnBudgetExceeded()
+        self._budget.record()
+        return self._chat.complete(messages, **kw)
 
 
 @dataclass
@@ -149,6 +192,8 @@ class MemoryAgent:
         cache_min_score: float = 0.62,
         cache_ttl: int | None = None,
         max_context_tokens: int = 2800,
+        max_calls_per_turn: int = 8,
+        turn_deadline_s: float = 90.0,
     ):
         self.conn = conn
         self.user_id = user_id
@@ -164,6 +209,8 @@ class MemoryAgent:
         self.cache_min_score = cache_min_score
         self.cache_ttl = cache_ttl
         self.max_context_tokens = max_context_tokens
+        self.max_calls_per_turn = max_calls_per_turn
+        self.turn_deadline_s = turn_deadline_s
         persona.ensure_default(conn, user_id)
         # The planner needs exact param names; registry embeddings must exist.
         toolbox.sync_tools(conn, embedder)
@@ -215,13 +262,19 @@ class MemoryAgent:
                     answer_cache_hit=True, context_snapshot=snap,
                 )
 
+        # Per-turn budget: all chat calls this turn count against it. When it is
+        # spent, optional retries are skipped rather than failing the turn.
+        budget = TurnBudget(max_calls=self.max_calls_per_turn,
+                            deadline_s=self.turn_deadline_s)
+        chat = _BudgetedChat(self.chat, budget)
+
         # Extraction BEFORE context assembly: if the user corrects a fact in
         # this very turn, the answer already reflects the new value. The LLM
         # call itself is inside the flag, not just the write.
         facts_written = 0
         dropped: list = []
         if self.extract_turns:
-            raw, _model = extract.extract_facts(self.chat, text)
+            raw, _model = extract.extract_facts(chat, text)
             if raw:
                 valid, dropped = extract.validate_facts(raw)
                 if valid:
@@ -257,7 +310,7 @@ class MemoryAgent:
         # conversation value as current.
         summary = working.summarize_older(
             conn, user_id=self.user_id, thread_id=thread_id,
-            chat=self.chat, keep_k=self.recency_k,
+            chat=chat, keep_k=self.recency_k,
             current_facts=facts_text or None,
         )
 
@@ -302,10 +355,10 @@ class MemoryAgent:
 
         tool_outcomes = self._tool_loop(
             thread_id=thread_id, messages=messages, text=text,
-            query_vec=query_vec, facts=facts,
+            query_vec=query_vec, facts=facts, chat=chat,
         )
 
-        out = self.chat.complete(messages)
+        out = chat.complete(messages)
         # Verification: the tool numbers are authoritative; if the draft
         # omitted them, one retry with an explicit note. Code checks, the
         # model answers — arithmetic never trusted to prose.
@@ -319,8 +372,12 @@ class MemoryAgent:
                     "Final answer, using those numbers." 
                 ),
             })
-            retry = self.chat.complete(messages)
-            if not _missing_numbers(retry.text, tool_outcomes, text):
+            try:
+                retry = chat.complete(messages)
+            except TurnBudgetExceeded:
+                retry = None
+            if retry is not None and not _missing_numbers(
+                    retry.text, tool_outcomes, text):
                 out = retry
 
         # Supersession guard: a draft that states a superseded value and omits
@@ -339,8 +396,11 @@ class MemoryAgent:
                     f"Current authoritative value(s): {note}. Rewrite the "
                     "answer using the current values; do not present a "
                     "superseded value as current.")})
-                retry = self.chat.complete(messages)
-                if not _stale_hits(retry.text, pairs):
+                try:
+                    retry = chat.complete(messages)
+                except TurnBudgetExceeded:
+                    retry = None
+                if retry is not None and not _stale_hits(retry.text, pairs):
                     out = retry
 
         if cacheable:
@@ -393,11 +453,11 @@ class MemoryAgent:
     # ------------------------------------------------------------------
     def _tool_loop(
         self, *, thread_id: str, messages: list[dict], text: str,
-        query_vec, facts: dict,
+        query_vec, facts: dict, chat,
     ) -> list[dict]:
         """Plan/run tool calls until the planner says answer or rounds run out."""
         return toolbox.run_tool_loop(
             self.conn, user_id=self.user_id, thread_id=thread_id,
-            chat=self.chat, messages=messages, text=text, query_vec=query_vec,
+            chat=chat, messages=messages, text=text, query_vec=query_vec,
             facts=facts, use_tools=self.use_tools, tool_rounds=self.tool_rounds,
         )
