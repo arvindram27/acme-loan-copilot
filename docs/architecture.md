@@ -5,7 +5,7 @@
 ```mermaid
 erDiagram
     persona ||--o{ persona : supersedes
-    entity ||--o{ fact : "has (append-only)"
+    entity ||--o{ fact : "has (app-level append-only)"
     fact ||--o{ fact : supersedes
     turn }o--|| thread : "belongs to"
     doc ||--o{ chunk : chunks
@@ -67,7 +67,7 @@ flowchart TD
 flowchart LR
     subgraph scratch["scratch (agentmem)"]
         T1[mem.turn] --> C1[SQL + pgvector]
-        F1[mem.fact append-only] --> C1
+        F1[mem.fact app-level append-only] --> C1
         P1[mem.persona] --> C1
     end
     subgraph langgraph["langgraph (agentmem_lg)"]

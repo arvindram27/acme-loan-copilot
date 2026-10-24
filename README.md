@@ -144,6 +144,7 @@ selection excludes `live`; `db` tests skip cleanly when Postgres is unreachable.
 - [Units](docs/units.md) — what each memory unit stores, when to use it, what it is *not* for
 - [Architecture](docs/architecture.md) — schema, context assembly, and grader-cascade diagrams
 - [Backends](docs/backends.md) — scratch SQL vs LangGraph, side by side
+- [Security](docs/security.md) — what fact-history protection enforces, and what it does not
 - [Evaluation](docs/evaluation.md) — the harness, grader authority, and results
 
 Design notes and the evaluation methodology live in [`docs/`](docs/).

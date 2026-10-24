@@ -86,6 +86,7 @@ def conn():
     c.close()
 
 
+@pytest.mark.db
 def test_budget_skips_optional_supersession_rewrite(conn):
     u = f"tb-{random.randint(10**8, 10**9 - 1)}"
     entity.write_fact(conn, user_id=u, thread_id="t", kind="applicant",

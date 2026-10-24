@@ -28,9 +28,11 @@ discipline.
 
 ## Behavioral differences to know about
 
-- **Fact history.** Scratch keeps append-only `mem.fact` rows (auditable: what the
-  agent believed, and when). LangGraph's `put()` overwrites — current-facts-only.
-  Correctness is identical; auditability differs.
+- **Fact history.** Scratch keeps `mem.fact` rows append-only at the application
+  level (auditable: what the agent believed, and when). The enforcement scope —
+  application write path, not tamper-proof against a privileged SQL role — is in
+  [docs/security.md](security.md). LangGraph's `put()` overwrites —
+  current-facts-only. Correctness is identical; auditability differs.
 - **Summaries + answer cache** are scratch-only for now. They re-implement cleanly on
   the store (summaries over checkpointer messages, cache keyed by the store fact-epoch)
   but were scoped out of milestone 7.
