@@ -13,6 +13,11 @@ from openai import OpenAI
 
 from agentmem.settings import Settings, get_settings
 
+# Explicit, bounded network behaviour (review #10): every chat call has a hard
+# timeout and a capped number of SDK retries, rather than relying on defaults.
+REQUEST_TIMEOUT_S = 30.0
+MAX_RETRIES = 2
+
 
 @dataclass(frozen=True)
 class ChatResult:
@@ -33,6 +38,8 @@ class ChatClient:
         self._client = OpenAI(
             base_url=self.settings.openrouter_base_url,
             api_key=self.settings.api_key or "unset",
+            timeout=REQUEST_TIMEOUT_S,
+            max_retries=MAX_RETRIES,
             default_headers={
                 "HTTP-Referer": "http://localhost:8730",
                 "X-Title": "Acme Loan Copilot",

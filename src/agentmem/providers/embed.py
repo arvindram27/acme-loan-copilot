@@ -13,6 +13,10 @@ from openai import OpenAI
 
 from agentmem.settings import Settings, get_settings
 
+# Explicit, bounded network behaviour (review #10), mirroring the chat client.
+REQUEST_TIMEOUT_S = 30.0
+MAX_RETRIES = 2
+
 
 class Embedder:
     def __init__(self, settings: Settings | None = None):
@@ -20,6 +24,8 @@ class Embedder:
         self._client = OpenAI(
             base_url=self.settings.openrouter_base_url,
             api_key=self.settings.api_key or "unset",
+            timeout=REQUEST_TIMEOUT_S,
+            max_retries=MAX_RETRIES,
         )
         self._embed = lru_cache(maxsize=1024)(self._embed_uncached)
         self.calls = 0

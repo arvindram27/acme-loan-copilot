@@ -125,6 +125,10 @@ def write_fact(
 
     entity_id = get_or_create_entity(conn, user_id=user_id, kind=kind, name=name)
     with conn.transaction():  # savepoint if nested, txn if not — nesting-safe
+        # Serialize corrections for this entity across connections (review #11):
+        # without it two concurrent writers can both supersede the same row and
+        # race the partial unique index. The lock is transaction-scoped.
+        conn.execute("SELECT pg_advisory_xact_lock(%s)", (entity_id,))
         cur = conn.execute(
             "SELECT fact_id, value FROM mem.fact "
             "WHERE entity_id = %s AND attr = %s AND status = 'active' FOR UPDATE",
