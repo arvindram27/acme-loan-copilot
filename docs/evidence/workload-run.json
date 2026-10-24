@@ -1,0 +1,383 @@
+{
+  "_meta": {
+    "generated_at": "2026-10-24T14:16:29.734205+00:00",
+    "commit": "d937a1c5248fe3666be2d321043a90705eab8e50",
+    "chat_model": "gpt-4o-mini",
+    "judge_model": "gpt-4o",
+    "jev_model": "jev-latest",
+    "workload": "workload_v1",
+    "workload_sha256": "e3e5b15eb61cf9d097f91f47cdc8262eda29394a70a910f3f5d9aab1c6439484",
+    "repeat_count": 1,
+    "cache_state": "cold (each backend's demo users are reset before a run)",
+    "authority_rule": "per check: highest kappa >= 0.6 wins; ties to the cheaper grader; below 0.6 stays unvalidated",
+    "judge_note": "the endpoint is direct OpenAI, so the judge is same-family (gpt-4o vs gpt-4o-mini); this is NOT a cross-family comparison"
+  },
+  "runs": [
+    {
+      "backend": "memory",
+      "run_id": 22,
+      "model": "gpt-4o-mini",
+      "workload": "workload_v1",
+      "n_items": 32,
+      "metrics": {
+        "n": 32,
+        "op_ci": [
+          0.7846829880728186,
+          1.0
+        ],
+        "p50_ms": 4191.978699993342,
+        "p95_ms": 6694.834199966863,
+        "accuracy": 1.0,
+        "cost_usd": 0.009494,
+        "op_score": 1.0,
+        "accuracy_ci": [
+          0.8928172849426366,
+          1.0
+        ],
+        "by_category": {
+          "tool": {
+            "n": 5,
+            "ci": [
+              0.5655085052479191,
+              1.0
+            ],
+            "passed": 5,
+            "accuracy": 1.0
+          },
+          "scope": {
+            "n": 2,
+            "ci": [
+              0.34237195288961925,
+              1.0
+            ],
+            "passed": 2,
+            "accuracy": 1.0
+          },
+          "setup": {
+            "n": 3,
+            "ci": [
+              0.43849391955098227,
+              1.0
+            ],
+            "passed": 3,
+            "accuracy": 1.0
+          },
+          "recall": {
+            "n": 7,
+            "ci": [
+              0.6456611570247934,
+              1.0
+            ],
+            "passed": 7,
+            "accuracy": 1.0
+          },
+          "smalltalk": {
+            "n": 3,
+            "ci": [
+              0.43849391955098227,
+              1.0
+            ],
+            "passed": 3,
+            "accuracy": 1.0
+          },
+          "kb_grounding": {
+            "n": 7,
+            "ci": [
+              0.6456611570247934,
+              1.0
+            ],
+            "passed": 7,
+            "accuracy": 1.0
+          },
+          "entity_update": {
+            "n": 2,
+            "ci": [
+              0.34237195288961925,
+              1.0
+            ],
+            "passed": 2,
+            "accuracy": 1.0
+          },
+          "cross_thread_recall": {
+            "n": 1,
+            "ci": [
+              0.20654329147389294,
+              1.0
+            ],
+            "passed": 1,
+            "accuracy": 1.0
+          },
+          "entity_update_setup": {
+            "n": 1,
+            "ci": [
+              0.20654329147389294,
+              1.0
+            ],
+            "passed": 1,
+            "accuracy": 1.0
+          },
+          "same_turn_correction": {
+            "n": 1,
+            "ci": [
+              0.20654329147389294,
+              1.0
+            ],
+            "passed": 1,
+            "accuracy": 1.0
+          }
+        },
+        "tokens_mean": 741.71875,
+        "cache_hit_rate": 0.25,
+        "summary_used_frac": 0.34375,
+        "context_tokens_mean": 642.0,
+        "answer_cache_hit_rate": 0.07692307692307693
+      },
+      "jev_cost_usd": 0.00174324696,
+      "finished_at": "2026-10-24 14:11:11.207744+00:00"
+    },
+    {
+      "backend": "langgraph",
+      "run_id": 23,
+      "model": "gpt-4o-mini",
+      "workload": "workload_v1",
+      "n_items": 32,
+      "metrics": {
+        "n": 32,
+        "op_ci": [
+          0.7846829880728186,
+          1.0
+        ],
+        "p50_ms": 3478.0641000252217,
+        "p95_ms": 5549.340899917297,
+        "accuracy": 1.0,
+        "cost_usd": 0.0096352,
+        "op_score": 1.0,
+        "accuracy_ci": [
+          0.8928172849426366,
+          1.0
+        ],
+        "by_category": {
+          "tool": {
+            "n": 5,
+            "ci": [
+              0.5655085052479191,
+              1.0
+            ],
+            "passed": 5,
+            "accuracy": 1.0
+          },
+          "scope": {
+            "n": 2,
+            "ci": [
+              0.34237195288961925,
+              1.0
+            ],
+            "passed": 2,
+            "accuracy": 1.0
+          },
+          "setup": {
+            "n": 3,
+            "ci": [
+              0.43849391955098227,
+              1.0
+            ],
+            "passed": 3,
+            "accuracy": 1.0
+          },
+          "recall": {
+            "n": 7,
+            "ci": [
+              0.6456611570247934,
+              1.0
+            ],
+            "passed": 7,
+            "accuracy": 1.0
+          },
+          "smalltalk": {
+            "n": 3,
+            "ci": [
+              0.43849391955098227,
+              1.0
+            ],
+            "passed": 3,
+            "accuracy": 1.0
+          },
+          "kb_grounding": {
+            "n": 7,
+            "ci": [
+              0.6456611570247934,
+              1.0
+            ],
+            "passed": 7,
+            "accuracy": 1.0
+          },
+          "entity_update": {
+            "n": 2,
+            "ci": [
+              0.34237195288961925,
+              1.0
+            ],
+            "passed": 2,
+            "accuracy": 1.0
+          },
+          "cross_thread_recall": {
+            "n": 1,
+            "ci": [
+              0.20654329147389294,
+              1.0
+            ],
+            "passed": 1,
+            "accuracy": 1.0
+          },
+          "entity_update_setup": {
+            "n": 1,
+            "ci": [
+              0.20654329147389294,
+              1.0
+            ],
+            "passed": 1,
+            "accuracy": 1.0
+          },
+          "same_turn_correction": {
+            "n": 1,
+            "ci": [
+              0.20654329147389294,
+              1.0
+            ],
+            "passed": 1,
+            "accuracy": 1.0
+          }
+        },
+        "tokens_mean": 752.75,
+        "cache_hit_rate": 0.25,
+        "summary_used_frac": 0.0,
+        "context_tokens_mean": 653.5625,
+        "answer_cache_hit_rate": 0.0
+      },
+      "jev_cost_usd": 0.003504680088,
+      "finished_at": "2026-10-24 14:13:20.157068+00:00"
+    },
+    {
+      "backend": "baseline",
+      "run_id": 24,
+      "model": "gpt-4o-mini",
+      "workload": "workload_v1",
+      "n_items": 32,
+      "metrics": {
+        "n": 32,
+        "op_ci": [
+          0.040093073737921175,
+          0.39941907763863693
+        ],
+        "p50_ms": 1249.5462999213487,
+        "p95_ms": 1715.292499982752,
+        "accuracy": 0.28125,
+        "cost_usd": 0.0027156000000000003,
+        "op_score": 0.14285714285714285,
+        "accuracy_ci": [
+          0.15564406845647866,
+          0.4537483693811179
+        ],
+        "by_category": {
+          "tool": {
+            "n": 5,
+            "ci": [
+              0.0,
+              0.43449149475208104
+            ],
+            "passed": 0,
+            "accuracy": 0.0
+          },
+          "scope": {
+            "n": 2,
+            "ci": [
+              0.09452865480086614,
+              0.9054713451991339
+            ],
+            "passed": 1,
+            "accuracy": 0.5
+          },
+          "setup": {
+            "n": 3,
+            "ci": [
+              0.43849391955098227,
+              1.0
+            ],
+            "passed": 3,
+            "accuracy": 1.0
+          },
+          "recall": {
+            "n": 7,
+            "ci": [
+              0.0,
+              0.35433884297520657
+            ],
+            "passed": 0,
+            "accuracy": 0.0
+          },
+          "smalltalk": {
+            "n": 3,
+            "ci": [
+              0.43849391955098227,
+              1.0
+            ],
+            "passed": 3,
+            "accuracy": 1.0
+          },
+          "kb_grounding": {
+            "n": 7,
+            "ci": [
+              0.02567895594897479,
+              0.51313450331903
+            ],
+            "passed": 1,
+            "accuracy": 0.14285714285714285
+          },
+          "entity_update": {
+            "n": 2,
+            "ci": [
+              0.0,
+              0.6576280471103807
+            ],
+            "passed": 0,
+            "accuracy": 0.0
+          },
+          "cross_thread_recall": {
+            "n": 1,
+            "ci": [
+              0.0,
+              0.7934567085261071
+            ],
+            "passed": 0,
+            "accuracy": 0.0
+          },
+          "entity_update_setup": {
+            "n": 1,
+            "ci": [
+              0.20654329147389294,
+              1.0
+            ],
+            "passed": 1,
+            "accuracy": 1.0
+          },
+          "same_turn_correction": {
+            "n": 1,
+            "ci": [
+              0.0,
+              0.7934567085261071
+            ],
+            "passed": 0,
+            "accuracy": 0.0
+          }
+        },
+        "tokens_mean": 212.15625,
+        "cache_hit_rate": 0.0,
+        "summary_used_frac": 0.0,
+        "context_tokens_mean": 0.0,
+        "answer_cache_hit_rate": 0.0
+      },
+      "jev_cost_usd": 0.004841535132,
+      "finished_at": "2026-10-24 14:14:11.043058+00:00"
+    }
+  ]
+}
