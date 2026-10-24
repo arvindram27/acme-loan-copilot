@@ -73,7 +73,10 @@ class RunsSummary:
     n: int
     op_score: float          # memory-operation correctness
     op_ci: tuple[float, float]
-    cache_hit_rate: float
+    cache_hit_rate: float    # tool-result cache
+    answer_cache_hit_rate: float   # semantic answer cache
+    context_tokens_mean: float     # estimated prompt tokens per turn
+    summary_used_frac: float       # turns that ran with a working-memory summary
     p50_ms: float
     p95_ms: float
     tokens_mean: float
@@ -84,6 +87,9 @@ class RunsSummary:
             "accuracy": self.accuracy, "accuracy_ci": self.accuracy_ci,
             "n": self.n, "op_score": self.op_score, "op_ci": self.op_ci,
             "cache_hit_rate": self.cache_hit_rate,
+            "answer_cache_hit_rate": self.answer_cache_hit_rate,
+            "context_tokens_mean": self.context_tokens_mean,
+            "summary_used_frac": self.summary_used_frac,
             "p50_ms": self.p50_ms, "p95_ms": self.p95_ms,
             "tokens_mean": self.tokens_mean, "cost_usd": self.cost_usd,
         }
@@ -91,7 +97,9 @@ class RunsSummary:
 
 def summarize(results: list[dict]) -> RunsSummary:
     """results: per-item dicts with keys answer_ok(bool), op_ok(bool|None),
-    latency_ms, tokens, cost_usd, cache_hit(bool). op_ok None -> excluded."""
+    latency_ms, tokens, cost_usd, cache_hit(bool), cache_eligible(bool),
+    answer_cache_hit(bool), answer_cache_eligible(bool), context_tokens(int),
+    summary_used(bool). op_ok None -> excluded; absent keys -> defaults."""
     n = len(results)
     ok = sum(1 for r in results if r.get("answer_ok"))
     op_rows = [r for r in results if r.get("op_ok") is not None]
@@ -101,6 +109,10 @@ def summarize(results: list[dict]) -> RunsSummary:
     cost = sum(r.get("cost_usd", 0.0) for r in results)
     cache = sum(1 for r in results if r.get("cache_hit"))
     cacheable = sum(1 for r in results if r.get("cache_eligible"))
+    ans_cache = sum(1 for r in results if r.get("answer_cache_hit"))
+    ans_cacheable = sum(1 for r in results if r.get("answer_cache_eligible"))
+    ctx = [r.get("context_tokens", 0) for r in results]
+    summary_used = sum(1 for r in results if r.get("summary_used"))
     return RunsSummary(
         accuracy=ok / n if n else 0.0,
         accuracy_ci=wilson(ok, n),
@@ -108,6 +120,9 @@ def summarize(results: list[dict]) -> RunsSummary:
         op_score=(op_passed / len(op_rows)) if op_rows else float("nan"),
         op_ci=wilson(op_passed, len(op_rows)),
         cache_hit_rate=(cache / cacheable) if cacheable else 0.0,
+        answer_cache_hit_rate=(ans_cache / ans_cacheable) if ans_cacheable else 0.0,
+        context_tokens_mean=(sum(ctx) / n) if n else 0.0,
+        summary_used_frac=(summary_used / n) if n else 0.0,
         p50_ms=pctl(lat, 50),
         p95_ms=pctl(lat, 95),
         tokens_mean=(sum(tok) / n) if n else 0.0,

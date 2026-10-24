@@ -1,14 +1,18 @@
 """Agent core: the stateless baseline and the memory-wired agent.
 
-MemoryAgent's context assembly, in order:
+MemoryAgent's context assembly, in order (composed in units/context.py):
   1. persona (one active version per user, injected once)
   2. entity facts (current values only — superseded rows never leak)
-  3. recency (the last k turns, as proper chat messages)
-  4. semantic recall of older turns (labelled, so provenance is visible)
+  3. working-memory summary (older turns folded, cited by turn seq)
+  4. recency (the last k turns, as proper chat messages)
+  5. semantic recall of older turns (labelled, so provenance is visible)
+  6. policy excerpts (hybrid retrieval, budget-trimmed last)
 
-Every answer persists both turns; the user turn is embedded for future
-recall. The assistant turn is not embedded (halves embedding calls; recall
-targets what the user asked, not what we replied).
+A paraphrase of an already-answered question (same scope, unchanged facts)
+is served from the semantic answer cache with no completion. Every answer
+persists both turns; the user turn is embedded for future recall. The
+assistant turn is not embedded (halves embedding calls; recall targets what
+the user asked, not what we replied).
 """
 
 from __future__ import annotations
@@ -19,7 +23,17 @@ from dataclasses import dataclass, field
 from agentmem.providers.chat import ChatClient
 from agentmem.providers.embed import Embedder
 from agentmem.tools import TOOLS
-from agentmem.units import conversation, entity, extract, knowledge, persona, toolbox
+from agentmem.units import (
+    cache,
+    context,
+    conversation,
+    entity,
+    extract,
+    knowledge,
+    persona,
+    toolbox,
+    working,
+)
 
 SYSTEM_BASE = (
     "You are the loan-officer copilot for Acme Home Loans. Answer from the "
@@ -71,6 +85,10 @@ class TurnOutcome:
     tool_calls: list = field(default_factory=list)       # name/source/bytes meta
     tool_results: list = field(default_factory=list)     # full results, for grading
     tokens: int = 0
+    answer_cache_hit: bool = False    # served from mem.cache (no completion)
+    context_tokens: int = 0           # estimated prompt tokens (system+messages)
+    summary_used: bool = False        # a working-memory summary was in context
+    summary_turns: int = 0            # turns folded into the summary
 
 
 class BaselineAgent:
@@ -106,6 +124,10 @@ class MemoryAgent:
         extract_turns: bool = True,
         use_tools: bool = True,
         tool_rounds: int = 3,
+        use_cache: bool = True,
+        cache_min_score: float = 0.62,
+        cache_ttl: int | None = None,
+        max_context_tokens: int = 2800,
     ):
         self.conn = conn
         self.user_id = user_id
@@ -117,6 +139,10 @@ class MemoryAgent:
         self.extract_turns = extract_turns
         self.use_tools = use_tools
         self.tool_rounds = tool_rounds
+        self.use_cache = use_cache
+        self.cache_min_score = cache_min_score
+        self.cache_ttl = cache_ttl
+        self.max_context_tokens = max_context_tokens
         persona.ensure_default(conn, user_id)
         # The planner needs exact param names; registry embeddings must exist.
         toolbox.sync_tools(conn, embedder)
@@ -139,6 +165,32 @@ class MemoryAgent:
             conn, user_id=self.user_id, thread_id=thread_id,
             role="user", content=text, embedding=query_vec,
         )["seq"]
+
+        # Semantic answer cache (unit 6): a paraphrase of a question we have
+        # already answered, with unchanged facts, is served verbatim — no
+        # extraction, no tool loop, no completion. Gated to interrogative
+        # turns that do not require a tool, so fact statements are never
+        # swallowed and the eval's required-tool discipline is never skipped.
+        cacheable = (
+            self.use_cache
+            and toolbox.required_tool(text) is None
+            and cache.is_question(text)
+        )
+        if cacheable:
+            hit = cache.lookup(
+                conn, user_id=self.user_id, thread_id=thread_id,
+                query_embedding=query_vec, min_score=self.cache_min_score,
+            )
+            if hit is not None:
+                conversation.append_turn(
+                    conn, user_id=self.user_id, thread_id=thread_id,
+                    role="assistant", content=hit["answer"],
+                )
+                return TurnOutcome(
+                    text=hit["answer"], thread_id=thread_id,
+                    recent_turns=0, recalled_turns=0,
+                    answer_cache_hit=True,
+                )
 
         # Extraction BEFORE context assembly: if the user corrects a fact in
         # this very turn, the answer already reflects the new value.
@@ -175,6 +227,15 @@ class MemoryAgent:
             for name, kv in facts.items() for k, v in kv.items()
         )
 
+        # Working memory: fold turns that fell out of the verbatim window.
+        # Current facts are injected so the summary never re-asserts a stale
+        # conversation value as current.
+        summary = working.summarize_older(
+            conn, user_id=self.user_id, thread_id=thread_id,
+            chat=self.chat, keep_k=self.recency_k,
+            current_facts=facts_text or None,
+        )
+
         recent = conversation.recent_turns(conn, thread_id, k=self.recency_k)
         recent_before_current = [t for t in recent if t["seq"] < seq]
         recalled = conversation.recall(
@@ -182,29 +243,25 @@ class MemoryAgent:
             query_embedding=query_vec, k=self.recall_k,
             before_seq=seq - len(recent_before_current),
         )
-
-        blocks = [SYSTEM_BASE]
-        if persona_text:
-            blocks.append(f"## Persona\n{persona_text}")
-        if facts_text:
-            blocks.append(f"## Known facts\n{facts_text}")
-        if recalled:
-            blocks.append("## Earlier in this thread (semantically relevant)\n"
-                          + conversation.format_turns(recalled))
         chunks = knowledge.hybrid_search(
             conn, query=text, query_embedding=query_vec, k=4,
             min_score=self.kb_min_score,
         )
-        if chunks:
-            blocks.append(
-                "## Policy excerpts (cite as [title §chunk]; quote numbers "
-                "only from here)\n" + knowledge.format_chunks(chunks)
-            )
-        system_prompt = "\n\n".join(blocks)
 
-        messages = [{"role": "system", "content": system_prompt}]
-        messages += [{"role": t["role"], "content": t["content"]}
-                     for t in recent_before_current]
+        assembled = context.assemble(
+            system_base=SYSTEM_BASE,
+            persona_text=persona_text,
+            facts_text=facts_text,
+            summary=summary,
+            recalled=recalled,
+            chunks=chunks,
+            recent_before_current=recent_before_current,
+            max_context_tokens=self.max_context_tokens,
+        )
+        chunks = assembled.chunks  # budget may have trimmed the excerpts
+
+        messages = [{"role": "system", "content": assembled.system}]
+        messages += assembled.messages
         messages.append({"role": "user", "content": text})
 
         tool_outcomes = self._tool_loop(
@@ -229,6 +286,14 @@ class MemoryAgent:
             retry = self.chat.complete(messages)
             if not _missing_numbers(retry.text, tool_outcomes, text):
                 out = retry
+
+        if cacheable:
+            cache.store(
+                conn, user_id=self.user_id, thread_id=thread_id,
+                question=text, query_embedding=query_vec, answer=out.text,
+                ttl_seconds=self.cache_ttl,
+            )
+
         conversation.append_turn(
             conn, user_id=self.user_id, thread_id=thread_id,
             role="assistant", content=out.text,
@@ -237,7 +302,7 @@ class MemoryAgent:
             text=out.text,
             thread_id=thread_id,
             recent_turns=len(recent_before_current),
-            recalled_turns=len(recalled),
+            recalled_turns=assembled.recalled_turns,
             facts_used=facts,
             facts_written=facts_written,
             dropped_facts=dropped,
@@ -257,6 +322,11 @@ class MemoryAgent:
                 for t in tool_outcomes
             ],
             tokens=out.total_tokens,
+            context_tokens=assembled.context_tokens,
+            summary_used=assembled.summary_used,
+            summary_turns=(
+                len(summary["source_turn_ids"]) if summary else 0
+            ),
         )
 
     # ------------------------------------------------------------------

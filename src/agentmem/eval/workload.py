@@ -128,6 +128,19 @@ WORKLOAD_V1 = [
     {"n": 30, "user": "liam", "thread": "x", "category": "smalltalk",
      "text": "Got it, that covers everything. Thank you!",
      "expected": {}},
+
+    # --- S7: semantic answer cache (unit 6) ---------------------------------
+    # A recall question, then its paraphrase in the same scope with no fact
+    # change between them: the second must be served from mem.cache with ~0
+    # completion tokens. Both are "no required tool" questions so the cache
+    # gate admits them, and neither states a new fact so extraction is safe
+    # to skip on the hit.
+    {"n": 31, "user": "maya", "thread": "a", "category": "recall",
+     "text": "For my records — what monthly income do you have on file for me right now?",
+     "expected": {"must_include": ["8750"], "must_exclude": ["7900"]}},
+    {"n": 32, "user": "maya", "thread": "a", "category": "recall",
+     "text": "Sorry, one more time — could you tell me my current income per month?",
+     "expected": {"must_include": ["8750"], "must_exclude": ["7900"]}},
 ]
 
 

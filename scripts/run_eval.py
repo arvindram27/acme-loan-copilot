@@ -31,11 +31,20 @@ from agentmem.providers.chat import ChatClient
 from agentmem.providers.embed import Embedder
 from agentmem.providers.jev import JevClient
 from agentmem.settings import get_settings
-from agentmem.units import knowledge, toolbox
+from agentmem.units import cache, knowledge, toolbox
 
 # Approximate blended $/1k tokens (gpt-4o-mini in+out average) for the cost
 # line; the eval reports it as an estimate, not an invoice.
 USD_PER_1K_TOKENS = 0.0004
+
+
+def _ans_cache_eligible(step: dict, outcome) -> bool:
+    """A turn the semantic answer cache could have served: a question that
+    requires no tool (the cache gate admits it). Baseline has no cache."""
+    if outcome is None:
+        return False
+    return (toolbox.required_tool(step["text"]) is None
+            and cache.is_question(step["text"]))
 
 
 def _seed_kb(conn, embedder) -> None:
@@ -68,6 +77,10 @@ def _outcome_dict(outcome) -> dict:
         "tool_calls": outcome.tool_calls,
         "tool_results": outcome.tool_results,
         "tokens": outcome.tokens,
+        "answer_cache_hit": outcome.answer_cache_hit,
+        "context_tokens": outcome.context_tokens,
+        "summary_used": outcome.summary_used,
+        "summary_turns": outcome.summary_turns,
     }
 
 
@@ -87,7 +100,7 @@ def main() -> int:
     # Deterministic from scratch: clear the two workload users' memory so a
     # re-run measures the same thing (eval_run/eval_item history is kept).
     for table in ("mem.tool_call", "mem.turn", "mem.fact", "mem.entity",
-                  "mem.persona"):
+                  "mem.persona", "mem.summary", "mem.cache"):
         conn.execute(f"DELETE FROM {table} WHERE user_id IN ('maya', 'liam')")
 
     jev_g = judge_g = None
@@ -179,11 +192,21 @@ def main() -> int:
                 "cache_eligible": any(
                     t.get("name") == "rate_lookup" for t in
                     (outcome.tool_calls if outcome else [])),
+                "answer_cache_hit": bool(
+                    outcome and outcome.answer_cache_hit),
+                "answer_cache_eligible": bool(
+                    outcome is None or _ans_cache_eligible(step, outcome)),
+                "context_tokens": outcome.context_tokens if outcome else 0,
+                "summary_used": bool(outcome and outcome.summary_used),
             })
+            cache_mark = ("CACHE" if (outcome and outcome.answer_cache_hit)
+                          else "")
+            summ_mark = ("SUM" if (outcome and outcome.summary_used) else "")
             print(f"[{backend:<8}] n={step['n']:<2} "
                   f"{'OK ' if answer_ok else 'FAIL'} "
-                  f"{latency_ms:6.0f}ms tok={tokens} "
-                  f"tools={[t.get('name') for t in (outcome.tool_calls if outcome else [])] or '—'}")
+                  f"{latency_ms:6.0f}ms tok={tokens} ctx={results[-1]['context_tokens']} "
+                  f"tools={[t.get('name') for t in (outcome.tool_calls if outcome else [])] or '—'} "
+                  f"{cache_mark}{summ_mark}")
 
         summ = summarize(results)
         conn.execute(
@@ -196,6 +219,9 @@ def main() -> int:
         print(f"\n[{backend}] accuracy={d['accuracy']:.2f} "
               f"(95% CI {d['accuracy_ci'][0]:.2f}-{d['accuracy_ci'][1]:.2f}) "
               f"op_score={d['op_score']:.2f} cache_hit={d['cache_hit_rate']:.2f} "
+              f"ans_cache={d['answer_cache_hit_rate']:.2f} "
+              f"summary_used={d['summary_used_frac']:.2f} "
+              f"ctx_tokens_mean={d['context_tokens_mean']:.0f} "
               f"p50={d['p50_ms']:.0f}ms p95={d['p95_ms']:.0f}ms "
               f"tokens_mean={d['tokens_mean']:.0f} cost~${d['cost_usd']:.3f}")
 
