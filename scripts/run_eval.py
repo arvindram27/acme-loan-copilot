@@ -125,7 +125,8 @@ def main() -> int:
         lg_conn = psycopg.connect(s.database_url_lg, autocommit=True)
         _seed_kb(lg_conn, embedder)
         lg_pool = ConnectionPool(conninfo=s.database_url_lg,
-                                 min_size=1, max_size=4, open=True)
+                                 min_size=1, max_size=4, open=True,
+                                 kwargs={"autocommit": True})
         lg_store = build_store(lg_pool, embedder)
         lg_check = build_checkpointer(lg_pool)
         # deterministic from scratch: wipe the langgraph memory + tool log.

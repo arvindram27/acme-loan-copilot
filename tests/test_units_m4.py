@@ -93,27 +93,49 @@ def test_different_args_miss(conn):
 
 
 def test_offload(conn):
-    """The corpus dump must be offloaded to an artifact, not stored inline."""
+    """The corpus dump must be offloaded to an artifact, not stored inline.
+
+    Self-contained: inserts a synthetic large doc so the test does not depend on
+    the corpus having been seeded (CI starts with an empty knowledge base).
+    """
     u = _user()
-    out = toolbox.run_tool(conn, user_id=u, thread_id="t5",
-                           name="policy_full_dump", args={})
-    assert out["offloaded"], "37 chunks should exceed the 8KB threshold"
-    assert out["result_bytes"] > toolbox.OFFLOAD_BYTES
-    row = conn.execute(
-        "SELECT artifact_path FROM mem.tool_call WHERE call_id = %s",
-        (out["call_id"],),
-    ).fetchone()
-    path = toolbox.ARTIFACT_DIR / row[0]
-    assert path.exists()
-    full = json.loads(path.read_text("utf-8"))
-    assert full["chunks"] >= 30
-    # cached re-run reloads from the artifact
-    _ = toolbox.run_tool(conn, user_id=u, thread_id="t5", name="policy_full_dump", args={})
-    cached_call = conn.execute(
-        "SELECT call_id FROM mem.tool_call WHERE user_id=%s AND artifact_path=%s",
-        (u, row[0]),
-    ).fetchall()
-    assert cached_call
+    doc_id = conn.execute(
+        "INSERT INTO mem.doc (title, version) VALUES ('__offload_test__', '1') "
+        "ON CONFLICT (title, version) DO UPDATE SET title = EXCLUDED.title "
+        "RETURNING doc_id",
+    ).fetchone()[0]
+    conn.execute("DELETE FROM mem.chunk WHERE doc_id = %s", (doc_id,))
+    vec = "[" + ",".join("0.0" for _ in range(1535)) + ",1.0]"
+    for i in range(40):
+        conn.execute(
+            "INSERT INTO mem.chunk (doc_id, chunk_index, text, embedding) "
+            "VALUES (%s, %s, %s, %s::text::vector)",
+            (doc_id, i, f"offload filler chunk {i} " + "x" * 400, vec),
+        )
+    try:
+        out = toolbox.run_tool(conn, user_id=u, thread_id="t5",
+                               name="policy_full_dump", args={})
+        assert out["offloaded"], "a large dump should exceed the 8KB threshold"
+        assert out["result_bytes"] > toolbox.OFFLOAD_BYTES
+        row = conn.execute(
+            "SELECT artifact_path FROM mem.tool_call WHERE call_id = %s",
+            (out["call_id"],),
+        ).fetchone()
+        path = toolbox.ARTIFACT_DIR / row[0]
+        assert path.exists()
+        full = json.loads(path.read_text("utf-8"))
+        assert full["chunks"] >= 40
+        # cached re-run reloads from the artifact
+        _ = toolbox.run_tool(conn, user_id=u, thread_id="t5",
+                             name="policy_full_dump", args={})
+        cached_call = conn.execute(
+            "SELECT call_id FROM mem.tool_call "
+            "WHERE user_id=%s AND artifact_path=%s", (u, row[0]),
+        ).fetchall()
+        assert cached_call
+    finally:
+        conn.execute("DELETE FROM mem.chunk WHERE doc_id = %s", (doc_id,))
+        conn.execute("DELETE FROM mem.doc WHERE doc_id = %s", (doc_id,))
 
 
 def test_tool_error_is_logged(conn):

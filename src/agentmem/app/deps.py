@@ -85,8 +85,11 @@ def get_langgraph() -> dict:
         migrate(_settings.database_url_lg)
         conn = psycopg.connect(_settings.database_url_lg, autocommit=True)
         _seed_kb(conn, get_embedder())
+        # LangGraph's setup() runs CREATE INDEX CONCURRENTLY, which cannot run
+        # inside a transaction, so its pool connections must be autocommit.
         pool = ConnectionPool(conninfo=_settings.database_url_lg,
-                              min_size=1, max_size=4, open=True)
+                              min_size=1, max_size=4, open=True,
+                              kwargs={"autocommit": True})
         store = build_store(pool, get_embedder())
         check = build_checkpointer(pool)
         _lg = {"conn": conn, "store": store, "check": check}

@@ -59,18 +59,19 @@ def lg():
     s = get_settings()
     migrate(s.database_url_lg)
     conn = psycopg.connect(s.database_url_lg, autocommit=True)
-    conn.execute(
-        "TRUNCATE checkpoints, checkpoint_writes, checkpoint_blobs, "
-        "store, store_vectors CASCADE"
-    )
     embedder = FakeEmbedder()
     # LangGraph gets its own pool; the app SQL (agent.conn) keeps the plain
     # connection, avoiding psycopg pipeline-state corruption.
     from psycopg_pool import ConnectionPool
     pool = ConnectionPool(conninfo=s.database_url_lg, min_size=1, max_size=4,
-                          open=True)
-    store = build_store(pool, embedder)
-    check = build_checkpointer(pool)
+                          open=True, kwargs={"autocommit": True})
+    store = build_store(pool, embedder)       # setup() creates its tables
+    check = build_checkpointer(pool)          # setup() creates checkpoint tables
+    # clear AFTER setup so a fresh database has the tables to truncate
+    conn.execute(
+        "TRUNCATE checkpoints, checkpoint_writes, checkpoint_blobs, "
+        "store, store_vectors CASCADE"
+    )
     yield {"conn": conn, "store": store, "check": check, "embedder": embedder}
     conn.execute(
         "TRUNCATE checkpoints, checkpoint_writes, checkpoint_blobs, "
